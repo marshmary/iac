@@ -1,0 +1,139 @@
+version: "3"
+
+# -----------------------------------------------------------------------------
+# Tier 04 - large multi-team, multi-account, multi-cloud Terragrunt repository.
+#
+# Every task honors the PLATFORM / ENV / COMPONENT matrix, e.g.:
+#
+#   task plan PLATFORM=aws ENV=dev COMPONENT=baseline
+#   task policy-check PLATFORM=azure ENV=prod COMPONENT=baseline
+#
+# Engine duality: tasks resolve the IaC engine at run time (default OpenTofu,
+# falling back to Terraform when the preferred binary is absent) and hand it
+# to Terragrunt via --tf-path. Never hardcode an engine in scripts or docs;
+# prefer Terraform with: IAC_ENGINE=terraform task plan ...
+# -----------------------------------------------------------------------------
+
+env:
+  TF_PLUGIN_CACHE_DIR: ./.terraform-plugin-cache
+  TF_IN_AUTOMATION: "1"
+
+vars:
+  IAC_ENGINE: tofu
+  PLATFORM: aws
+  ENV: dev
+  COMPONENT: baseline
+  # tofu -> terraform fallback, resolved once per run.
+  IAC_BIN:
+    sh: |
+      if command -v {{.IAC_ENGINE}} >/dev/null 2>&1; then
+        echo "{{.IAC_ENGINE}}"
+      elif command -v terraform >/dev/null 2>&1; then
+        echo "terraform"
+      else
+        echo "neither {{.IAC_ENGINE}} nor terraform found on PATH - install one; tasks below will fail" >&2
+        echo "{{.IAC_ENGINE}}"
+      fi
+  TG_BIN:
+    sh: |
+      if ! command -v terragrunt >/dev/null 2>&1; then
+        echo "terragrunt is NOT on PATH - tasks below will fail" >&2
+      fi
+      echo "terragrunt"
+  TG_ARGS: "--tf-path {{.IAC_BIN}}"
+
+tasks:
+  engine-check:
+    desc: Print the resolved toolchain - terragrunt, IaC engine (tofu or terraform) and conftest
+    cmds:
+      - '{{.TG_BIN}} --version'
+      - '{{.IAC_BIN}} version'
+      - |
+        if command -v conftest >/dev/null 2>&1; then
+          conftest --version
+        else
+          echo "conftest: NOT FOUND - task policy-check will fail; see policy/README.md"
+        fi
+      - echo "Resolved: TG={{.TG_BIN}} engine={{.IAC_BIN}} (IAC_ENGINE={{.IAC_ENGINE}}) TG_ARGS={{.TG_ARGS}}"
+
+  hclfmt:
+    desc: Format every Terragrunt HCL file in the repo (in place)
+    cmds:
+      - '{{.TG_BIN}} hclfmt'
+
+  hclfmt-check:
+    desc: CI-style format gate - fails when any Terragrunt HCL file is unformatted
+    cmds:
+      - '{{.TG_BIN}} hclfmt --terragrunt-check'
+
+  hcl-validate:
+    desc: Validate one component (PLATFORM/ENV/COMPONENT) through Terragrunt
+    cmds:
+      - '{{.TG_BIN}} validate {{.TG_ARGS}} --terragrunt-working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}'
+
+  check:
+    desc: Offline full check - format gate + validate the dev baseline of EVERY platform (aws/azure/gcp)
+    deps: [hclfmt-check]
+    cmds:
+      - task: hcl-validate
+        vars: { PLATFORM: aws }
+      - task: hcl-validate
+        vars: { PLATFORM: azure }
+      - task: hcl-validate
+        vars: { PLATFORM: gcp }
+
+  plan:
+    desc: Plan one component and save tfplan (input for review and policy-check)
+    cmds:
+      - '{{.TG_BIN}} plan {{.TG_ARGS}} --terragrunt-working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}} -out=tfplan'
+
+  apply:
+    desc: Apply the reviewed tfplan for one component (refuses to run without one)
+    preconditions:
+      - sh: test -f platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}/tfplan
+        msg: "no tfplan at platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}} - run `task plan PLATFORM={{.PLATFORM}} ENV={{.ENV}} COMPONENT={{.COMPONENT}}`, review it, then apply"
+    cmds:
+      - '{{.TG_BIN}} apply {{.TG_ARGS}} --terragrunt-working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}} tfplan'
+
+  run-all-plan:
+    desc: Plan EVERY component under one platform/env scope - review output before run-all-apply
+    cmds:
+      - '{{.TG_BIN}} run-all plan {{.TG_ARGS}} --terragrunt-working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}} --terragrunt-non-interactive'
+
+  run-all-apply:
+    desc: DANGER - apply every component under one platform/env scope non-interactively (prod needs two humans)
+    cmds:
+      - '{{.TG_BIN}} run-all apply {{.TG_ARGS}} --terragrunt-working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}} --terragrunt-non-interactive'
+
+  policy-check:
+    desc: OPA/conftest gate on the saved tfplan (requires conftest and a prior task plan)
+    preconditions:
+      - sh: command -v conftest >/dev/null 2>&1
+        msg: "conftest is not installed - see policy/README.md for install and wiring"
+      - sh: test -f platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}/tfplan
+        msg: "no tfplan at platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}} - run `task plan` first"
+    cmds:
+      # Equivalent to running, inside the component dir:
+      #   <engine> show -json tfplan > tfplan.json && conftest test tfplan.json -p policy/
+      - '{{.IAC_BIN}} show -json platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}/tfplan > platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}/tfplan.json'
+      - 'conftest test platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}/tfplan.json -p policy/'
+
+  graph:
+    desc: Print the component dependency graph (DOT) for one platform/env scope
+    cmds:
+      - '{{.TG_BIN}} graph-dependencies --terragrunt-working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}}'
+
+  destroy:
+    desc: Destroy ONE component - destructive, double-check PLATFORM/ENV/COMPONENT first
+    cmds:
+      - '{{.TG_BIN}} destroy {{.TG_ARGS}} --terragrunt-working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}'
+
+  test:
+    desc: Run module tests (OpenTofu-only; modules live in the registry repo, not here)
+    preconditions:
+      - sh: '[ "{{.IAC_BIN}}" = "tofu" ]'
+        msg: "task test is OpenTofu-only (tofu test) - resolved engine is {{.IAC_BIN}}"
+    cmds:
+      - echo "Modules are NOT vendored in this repo - the baseline module lives in the registry:"
+      - echo "  git::https://github.com/__PROJECT_NAME__/iac-modules.git//baseline?ref=v0.0.0 (placeholder - see README)"
+      - echo "Run \`tofu test\` from a checkout of that registry once it exists, and wire the path here."

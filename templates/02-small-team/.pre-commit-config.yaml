@@ -1,0 +1,25 @@
+# Team guardrails (antonbabenko/pre-commit-terraform).
+# Windows: hooks need a POSIX shell - run pre-commit from Git Bash or WSL.
+repos:
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.96.1
+    hooks:
+      - id: terraform_fmt
+
+      # providers/ holds raw template layers with unresolved placeholder
+      # tokens; they are only valid after the project initializer merges them
+      # into envs/*/. Post-merge projects no longer contain providers/, so the
+      # exclude is harmless there.
+      - id: terraform_validate
+        exclude: ^providers/
+
+      - id: terraform_tflint
+        exclude: ^providers/
+
+      - id: terraform_docs
+        args:
+          - --args=--output-file README.md
+          - --args=--output-mode inject
+        # env roots are compositions of modules, not documented modules —
+        # their READMEs carry no TF_DOCS markers on purpose.
+        exclude: ^providers/|^envs/

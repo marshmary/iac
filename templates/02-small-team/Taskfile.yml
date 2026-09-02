@@ -1,0 +1,130 @@
+version: '3'
+
+# Tier 02 - small team: one root module per env (envs/*), shared modules/.
+# Every engine command goes through a task - run `task --list` for an index.
+# Engine duality: tasks call {{.IAC_BIN}} = IAC_ENGINE (default tofu) with
+# fallback to terraform; never assume one engine.
+
+env:
+  TF_PLUGIN_CACHE_DIR: '{{.TF_PLUGIN_CACHE_DIR | default "./.terraform-plugin-cache"}}'
+  TF_IN_AUTOMATION: '1'
+
+vars:
+  IAC_ENGINE: '{{.IAC_ENGINE | default "tofu"}}'
+  ENV: '{{.ENV | default "dev"}}'
+  IAC_BIN:
+    sh: 'if command -v "{{.IAC_ENGINE}}" >/dev/null 2>&1; then echo "{{.IAC_ENGINE}}"; elif command -v terraform >/dev/null 2>&1; then echo "terraform"; else echo "{{.IAC_ENGINE}}"; fi'
+
+tasks:
+  default:
+    desc: List all tasks
+    silent: true
+    cmds:
+      - task --list
+
+  engine-check:
+    desc: Fail fast unless an engine (tofu or terraform) is on PATH
+    preconditions:
+      - sh: command -v {{.IAC_BIN}} >/dev/null 2>&1
+        msg: 'No engine found on PATH - install OpenTofu (default) or set IAC_ENGINE=terraform.'
+    cmds:
+      - 'echo "engine: {{.IAC_BIN}} (IAC_ENGINE={{.IAC_ENGINE}})"'
+
+  fmt:
+    desc: Auto-format every HCL file (recursive, repo root)
+    deps: [engine-check]
+    cmds:
+      - '{{.IAC_BIN}} fmt -recursive'
+
+  fmt-check:
+    desc: Verify HCL formatting without writing (recursive)
+    deps: [engine-check]
+    cmds:
+      - '{{.IAC_BIN}} fmt -check -recursive'
+
+  lint:
+    desc: fmt-check then tflint across the repo (tflint must be on PATH)
+    deps: [fmt-check]
+    cmds:
+      # Fetch the plugins declared in .tflint.hcl (idempotent; network once).
+      - tflint --init
+      - tflint --recursive
+
+  init:
+    desc: Backend-less init for one env (ENV=dev|staging|prod, default dev)
+    deps: [engine-check]
+    dir: envs/{{.ENV}}
+    cmds:
+      - '{{.IAC_BIN}} init -backend=false'
+
+  init-backend:
+    desc: Real init incl. remote backend for one env (run bootstrap first!)
+    deps: [engine-check]
+    dir: envs/{{.ENV}}
+    cmds:
+      - '{{.IAC_BIN}} init'
+
+  validate:
+    desc: Validate one env (runs init first)
+    deps: [init]
+    dir: envs/{{.ENV}}
+    cmds:
+      - '{{.IAC_BIN}} validate'
+
+  check:
+    desc: Pre-PR gate - fmt-check + init + validate for one env
+    # Sequenced via cmds, not deps: deps run in parallel and init must finish
+    # before validate.
+    cmds:
+      - task: fmt-check
+      - task: init
+      - task: validate
+      - 'echo "check OK for ENV={{.ENV}}"'
+
+  plan:
+    desc: Write a reviewable tfplan for one env (envs/ENV/tfplan)
+    deps: [init-backend]
+    dir: envs/{{.ENV}}
+    cmds:
+      - '{{.IAC_BIN}} plan -var-file={{.ENV}}.tfvars -out=tfplan'
+
+  plan-dry:
+    desc: Plan without refresh and with dry_run=true - no cloud API calls
+    deps: [init-backend]
+    dir: envs/{{.ENV}}
+    cmds:
+      # Fake provider creds are enough, e.g. for AWS:
+      #   AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake task plan-dry ENV=dev
+      # The state backend itself must still be reachable.
+      - '{{.IAC_BIN}} plan -refresh=false -var-file={{.ENV}}.tfvars -var dry_run=true'
+
+  apply:
+    desc: Apply the reviewed tfplan of one env (refuses to run without one)
+    deps: [init-backend]
+    dir: envs/{{.ENV}}
+    preconditions:
+      # Absolute path: go-task does not guarantee the task dir for
+      # preconditions across versions.
+      - sh: test -f "{{.TASKFILE_DIR}}/envs/{{.ENV}}/tfplan"
+        msg: 'envs/{{.ENV}}/tfplan not found - run `task plan ENV={{.ENV}}` and review it first.'
+    cmds:
+      - '{{.IAC_BIN}} apply tfplan'
+
+  destroy:
+    desc: Destroy one env (dev only, unless you truly mean it)
+    deps: [init-backend]
+    dir: envs/{{.ENV}}
+    cmds:
+      - '{{.IAC_BIN}} destroy -var-file={{.ENV}}.tfvars'
+
+  test:
+    desc: 'Run baseline module tests (OpenTofu only; terraform users: check/plan)'
+    deps: [engine-check]
+    cmds:
+      # The module declares no providers, so module tests run fully offline.
+      - |
+        if [ "{{.IAC_BIN}}" = "tofu" ]; then
+          {{.IAC_BIN}} -chdir=modules/baseline test
+        else
+          echo "skip: module tests are tofu-only (IAC_BIN={{.IAC_BIN}}) - use 'task check' and 'task plan'."
+        fi

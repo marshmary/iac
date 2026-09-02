@@ -1,0 +1,28 @@
+# Engine working directories and plugin cache
+.terraform/
+.terraform-plugin-cache/
+
+# State must never be committed (can contain secrets)
+*.tfstate
+*.tfstate.*
+
+# Saved plans contain rendered secrets
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Local env files - real credentials live here, never tracked
+.env
+.env.*
+!.env.example
+
+# Local overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# .terraform.lock.hcl is intentionally NOT ignored - commit it so provider
+# versions stay pinned across machines.

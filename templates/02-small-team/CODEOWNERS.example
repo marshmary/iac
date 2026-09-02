@@ -1,0 +1,18 @@
+# CODEOWNERS.example - rename to CODEOWNERS once the repo is hosted
+# (GitHub: .github/CODEOWNERS or repo root; GitLab: CODEOWNERS).
+# Syntax: <path> <owner> - owners are auto-requested for review on PRs.
+
+# Default owners for everything in the repository
+# * @your-org/platform
+
+# Shared modules - changes ripple into every env
+# /modules/ @your-org/platform @your-org/senior-devs
+
+# Production root module - enforces the two-reviewer rule (see AGENTS.md)
+# /envs/prod/ @your-org/platform @your-org/leads
+
+# Staging root module
+# /envs/staging/ @your-org/platform
+
+# Dev is open to all engineers
+# /envs/dev/ @your-org/engineers

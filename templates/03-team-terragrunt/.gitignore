@@ -1,0 +1,24 @@
+# Terraform / OpenTofu
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform-plugin-cache/
+
+# Terragrunt — unit working dirs (generated backend.tf/provider.tf land in
+# here via the `generate` blocks, so nothing per-unit needs ignoring)
+.terragrunt-cache/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local task artifacts (task graph)
+deps.dot
+deps.png

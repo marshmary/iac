@@ -1,0 +1,157 @@
+version: '3'
+
+# ---------------------------------------------------------------------------
+# Team Terragrunt tier — task runner.
+#
+# Engine duality: IAC_ENGINE=tofu (default) or IAC_ENGINE=terraform. The
+# resolved binary is passed to Terragrunt via TG_ARGS (--tf-path), so no
+# task or doc hardcodes a single engine.
+#
+# Common variables:
+#   ENV       environment subtree under envs/      (default: dev)
+#   COMPONENT unit directory under envs/<env>/    (default: baseline)
+# ---------------------------------------------------------------------------
+
+env:
+  TF_PLUGIN_CACHE_DIR: '{{.TF_PLUGIN_CACHE_DIR | default "./.terraform-plugin-cache"}}'
+  TF_IN_AUTOMATION: '1'
+
+vars:
+  IAC_ENGINE: '{{.IAC_ENGINE | default "tofu"}}'
+  ENV: '{{.ENV | default "dev"}}'
+  COMPONENT: '{{.COMPONENT | default "baseline"}}'
+  IAC_BIN:
+    sh: 'if command -v "{{.IAC_ENGINE}}" >/dev/null 2>&1; then echo "{{.IAC_ENGINE}}"; elif command -v terraform >/dev/null 2>&1; then echo "terraform"; else echo "{{.IAC_ENGINE}}"; fi'
+  # Resolved through a shell check for symmetry with IAC_BIN; both branches
+  # deliberately yield the bare name so an absolute-path override has a
+  # single place to change.
+  TG_BIN:
+    sh: 'if command -v terragrunt >/dev/null 2>&1; then echo "terragrunt"; else echo "terragrunt"; fi'
+  TG_ARGS: '--tf-path {{.IAC_BIN}}'
+
+tasks:
+  engine-check:
+    desc: Verify an IaC engine (tofu or terraform) and terragrunt are on PATH
+    cmds:
+      - |
+        missing=0
+        if command -v "{{.IAC_ENGINE}}" >/dev/null 2>&1; then
+          echo "IaC engine: {{.IAC_ENGINE}}"
+        elif command -v terraform >/dev/null 2>&1; then
+          echo "IaC engine: terraform (fallback; IAC_ENGINE={{.IAC_ENGINE}} not found)"
+        else
+          echo "No IaC engine on PATH (wanted {{.IAC_ENGINE}} or terraform)." >&2
+          missing=1
+        fi
+        if command -v terragrunt >/dev/null 2>&1; then
+          echo "terragrunt: $(terragrunt --version 2>/dev/null | head -n 1)"
+        else
+          echo "terragrunt is not on PATH (expected version in .terragrunt-version)." >&2
+          missing=1
+        fi
+        if [ "$missing" -ne 0 ]; then
+          echo "ERROR: engine-check failed — install the missing tools and retry." >&2
+          exit 1
+        fi
+
+  hclfmt:
+    desc: Auto-format all Terragrunt HCL files (terragrunt hclfmt)
+    cmds:
+      - '{{.TG_BIN}} hclfmt'
+
+  hclfmt-check:
+    desc: Check Terragrunt HCL formatting without writing changes (CI-safe)
+    cmds:
+      - '{{.TG_BIN}} hclfmt --terragrunt-check'
+
+  hcl-validate:
+    desc: Validate Terragrunt HCL for one unit (ENV, COMPONENT) — offline parse check
+    deps: [engine-check]
+    cmds:
+      - '{{.TG_BIN}} hcl validate --terragrunt-working-dir envs/{{.ENV}}/{{.COMPONENT}}'
+
+  fmt:
+    desc: Format the baseline module source
+    cmds:
+      - '{{.IAC_BIN}} -chdir=modules/baseline fmt'
+
+  fmt-check:
+    desc: Check baseline module formatting without writing changes (CI-safe)
+    cmds:
+      - '{{.IAC_BIN}} -chdir=modules/baseline fmt -check'
+
+  init:
+    desc: Init the baseline module without a backend (offline-safe)
+    cmds:
+      - '{{.IAC_BIN}} -chdir=modules/baseline init -backend=false'
+
+  validate:
+    desc: Validate the baseline module (provider-free, offline)
+    cmds:
+      - '{{.IAC_BIN}} -chdir=modules/baseline validate'
+
+  check:
+    desc: Full offline check — Terragrunt HCL fmt/validate + module fmt/init/validate
+    deps: [hclfmt-check, hcl-validate, fmt-check]
+    cmds:
+      - task: init
+      - task: validate
+
+  init-backend:
+    desc: Terragrunt init for one unit — wires the remote state backend (ENV, COMPONENT)
+    deps: [engine-check]
+    cmds:
+      - '{{.TG_BIN}} init {{.TG_ARGS}} --terragrunt-working-dir envs/{{.ENV}}/{{.COMPONENT}}'
+
+  plan:
+    desc: Plan one component and write tfplan (ENV, COMPONENT)
+    deps: [engine-check]
+    cmds:
+      - '{{.TG_BIN}} plan {{.TG_ARGS}} --terragrunt-working-dir envs/{{.ENV}}/{{.COMPONENT}} -out=tfplan'
+
+  apply:
+    desc: Apply the reviewed tfplan for one component (ENV, COMPONENT)
+    deps: [engine-check]
+    cmds:
+      - '{{.TG_BIN}} apply {{.TG_ARGS}} --terragrunt-working-dir envs/{{.ENV}}/{{.COMPONENT}} tfplan'
+
+  run-all-plan:
+    desc: Plan every component in an environment (ENV) — read before run-all apply
+    deps: [engine-check]
+    cmds:
+      - '{{.TG_BIN}} run-all plan {{.TG_ARGS}} --terragrunt-working-dir envs/{{.ENV}} --terragrunt-non-interactive'
+
+  run-all-apply:
+    desc: Apply every component in an environment (ENV) — run run-all-plan FIRST
+    deps: [engine-check]
+    cmds:
+      - '{{.TG_BIN}} run-all apply {{.TG_ARGS}} --terragrunt-working-dir envs/{{.ENV}} --terragrunt-non-interactive'
+
+  graph:
+    desc: Render the Terragrunt dependency graph to deps.dot (deps.png when graphviz is installed)
+    deps: [engine-check]
+    cmds:
+      - |
+        {{.TG_BIN}} graph-dependencies --terragrunt-working-dir envs/{{.ENV}} > deps.dot
+        if command -v dot >/dev/null 2>&1; then
+          dot -Tpng deps.dot -o deps.png && echo "Wrote deps.png"
+        else
+          echo "Graphviz 'dot' not found — graph left in deps.dot (install graphviz to render deps.png)"
+        fi
+
+  destroy:
+    desc: Destroy one component (ENV, COMPONENT) — interactive confirmation kept on purpose
+    deps: [engine-check]
+    cmds:
+      - '{{.TG_BIN}} destroy {{.TG_ARGS}} --terragrunt-working-dir envs/{{.ENV}}/{{.COMPONENT}}'
+
+  test:
+    desc: Run baseline module tests via the native test framework (tofu engine only)
+    deps: [engine-check]
+    cmds:
+      - |
+        if [ "{{.IAC_ENGINE}}" = "tofu" ]; then
+          "{{.IAC_BIN}}" -chdir=modules/baseline test
+        else
+          echo "Module tests are guarded to OpenTofu in this tier; skipping (IAC_ENGINE={{.IAC_ENGINE}})."
+        fi

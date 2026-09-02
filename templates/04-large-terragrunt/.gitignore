@@ -1,0 +1,25 @@
+# Terragrunt working directories
+.terraform/
+.terragrunt-cache/
+.terraform-plugin-cache/
+
+# State and plans - NEVER commit these
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.json
+tfplan.json
+
+# Crash logs
+crash*.log
+
+# Local secrets - copy from .env.example, never commit the copy
+.env
+.env.*
+!.env.example
+
+# Component-local overrides (review before committing anything matching this)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

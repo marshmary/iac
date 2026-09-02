@@ -1,0 +1,24 @@
+# Pre-commit hooks (https://pre-commit.com). Run `pre-commit install` once.
+#
+# Raw-template layers: providers/ holds pre-injection HCL with placeholder
+# tokens and is deleted by init-project at instantiation time, so it is
+# excluded here — that content is validated as part of root.hcl after the
+# injection instead.
+#
+# Windows: these hooks require a POSIX shell — run pre-commit from Git Bash
+# or WSL (cmd/PowerShell hosts are not supported by pre-commit).
+repos:
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.96.1
+    hooks:
+      - id: terragrunt_fmt
+        args:
+          - --args=--terragrunt-check
+      - id: terraform_fmt
+        exclude: ^providers/
+      - id: terraform_validate
+        exclude: ^providers/
+      - id: terraform_tflint
+        exclude: ^providers/
+      - id: terraform_docs
+        exclude: ^providers/

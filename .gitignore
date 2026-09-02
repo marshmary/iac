@@ -1,0 +1,36 @@
+# IaC runtime artifacts (never commit state)
+.terraform/
+.terragrunt-cache/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.json
+tfplan
+tfplan.json
+crash.log
+crash.*.log
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# Caches
+.terraform-plugin-cache/
+.provider-cache/
+
+# Local overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Test scratch output
+tests/scratch/

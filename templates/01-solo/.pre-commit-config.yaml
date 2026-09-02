@@ -1,0 +1,11 @@
+# Terraform/OpenTofu pre-commit hooks.
+# Windows: these hooks need a POSIX shell (Git Bash or WSL) on PATH, plus
+# Python and git. Enable once per clone with:
+#   pre-commit install
+repos:
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.96.1
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+      - id: terraform_tflint

@@ -1,0 +1,33 @@
+# T6 — optional local emulators for full apply/destroy cycles without a cloud
+# account (docs/testing.md). Usage:
+#   docker compose -f tests/docker-compose.emulators.yml up -d
+#   # then, in a generated tier-01 project:
+#   set -a; . tests/fixtures/aws-fake.env; set +a   # includes AWS_ENDPOINT_URL
+#   task init-backend && task plan && task apply   # real API calls, local fake cloud
+#
+# Coverage: LocalStack community emulates S3/DynamoDB/IAM and more; Azurite
+# emulates Azure storage only (sufficient for the azure backend itself, not for
+# resource-group applies). GCP has no free emulator — use T2-T4 there.
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: iac-localstack
+    environment:
+      - SERVICES=s3,dynamodb,sts,iam
+      - DEBUG=0
+    ports:
+      - "4566:4566"          # single edge endpoint; point AWS_ENDPOINT_URL here
+    volumes:
+      - localstack-data:/var/lib/localstack
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: iac-azurite
+    ports:
+      - "10000:10000"        # blob; ARM_* endpoints via AZURE_STORAGE_HOST
+    volumes:
+      - azurite-data:/data
+
+volumes:
+  localstack-data:
+  azurite-data:

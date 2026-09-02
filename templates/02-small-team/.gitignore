@@ -1,0 +1,22 @@
+# Engine directories and plugin caches
+.terraform/
+.terraform-plugin-cache/
+
+# State and plan files - never commit
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Crash logs
+crash*.log
+
+# Local environment / credentials - never commit
+.env
+.env.*
+!.env.example
+
+# Local overrides
+override.tf
+*_override.tf
+
+# NOTE: .terraform.lock.hcl IS committed (reproducible plans/applies).

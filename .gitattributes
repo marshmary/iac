@@ -1,0 +1,10 @@
+# Cross-platform template repo: normalize everything to LF (see .editorconfig).
+# Taskfile/HCL/pre-commit tooling on Windows mis-handles CRLF in these files.
+* text=auto eol=lf
+
+# Shell scripts must never get CRLF, even under core.autocrlf=true
+*.sh text eol=lf
+*.ps1 text eol=crlf
+
+# Binaries (none today, reserved)
+*.png binary

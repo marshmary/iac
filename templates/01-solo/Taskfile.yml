@@ -1,0 +1,99 @@
+# go-task v3 runner. Works with either engine: IAC_ENGINE=tofu (default) or
+# IAC_ENGINE=terraform; the IAC_BIN var falls back to whichever binary exists.
+# Commands run through go-task's bundled mvdan/sh interpreter, so `command -v`
+# and friends behave the same on Windows, macOS and Linux.
+version: '3'
+
+env:
+  TF_PLUGIN_CACHE_DIR: '{{.TF_PLUGIN_CACHE_DIR | default "./.terraform-plugin-cache"}}'
+  TF_IN_AUTOMATION: '1'
+
+vars:
+  IAC_ENGINE: '{{.IAC_ENGINE | default "tofu"}}'
+  ENV: '{{.ENV | default "dev"}}'
+  IAC_BIN:
+    sh: 'if command -v "{{.IAC_ENGINE}}" >/dev/null 2>&1; then echo "{{.IAC_ENGINE}}"; elif command -v terraform >/dev/null 2>&1; then echo "terraform"; else echo "{{.IAC_ENGINE}}"; fi'
+
+tasks:
+  engine-check:
+    desc: Print the engine binary in use and fail if none is installed
+    cmds:
+      - echo "engine={{.IAC_BIN}}"
+    preconditions:
+      - sh: 'command -v tofu >/dev/null 2>&1 || command -v terraform >/dev/null 2>&1'
+        msg: 'No IaC engine found: install OpenTofu or Terraform >= 1.6 and re-run.'
+
+  fmt:
+    desc: Rewrite all .tf files to canonical format (recursive)
+    cmds:
+      - '{{.IAC_BIN}} fmt -recursive'
+
+  fmt-check:
+    desc: Fail if any .tf file is not canonically formatted
+    cmds:
+      - '{{.IAC_BIN}} fmt -check -recursive'
+
+  lint:
+    desc: Format check plus tflint (tflint is optional; install from terraform-linters)
+    cmds:
+      - '{{.IAC_BIN}} fmt -check -recursive'
+      - tflint --recursive
+
+  init:
+    desc: Offline-safe init - downloads providers without touching the backend
+    cmds:
+      - '{{.IAC_BIN}} init -backend=false'
+
+  init-backend:
+    desc: Real init against the remote state backend (run bootstrap first, see bootstrap/)
+    cmds:
+      - '{{.IAC_BIN}} init'
+    preconditions:
+      - sh: 'test -f backend.tf'
+        msg: 'backend.tf missing - the providers/<cloud> merge did not happen; re-run init-project.'
+
+  validate:
+    desc: Validate configuration (run task init first if providers are missing)
+    cmds:
+      - '{{.IAC_BIN}} validate'
+
+  check:
+    desc: No-cloud self-check (fmt-check, offline init, validate) - run before declaring work done
+    cmds:
+      - task: fmt-check
+      - task: init
+      - task: validate
+
+  plan:
+    desc: Plan the selected environment (ENV=dev|prod) against the real cloud
+    cmds:
+      - '{{.IAC_BIN}} plan -out=tfplan -var-file={{.ENV}}.tfvars'
+
+  plan-dry:
+    desc: Offline plan with fake credentials (AWS - dry_run=true enables the provider skip flags)
+    cmds:
+      - '{{.IAC_BIN}} plan -refresh=false -out=tfplan -var-file={{.ENV}}.tfvars -var dry_run=true'
+
+  apply:
+    desc: Apply the previously generated tfplan (review it first)
+    cmds:
+      - '{{.IAC_BIN}} apply tfplan'
+    preconditions:
+      - sh: 'test -f tfplan'
+        msg: 'No tfplan in the project root - run `task plan ENV=<env>` first.'
+
+  destroy:
+    desc: Destroy all resources in the selected environment
+    cmds:
+      - '{{.IAC_BIN}} destroy -var-file={{.ENV}}.tfvars'
+
+  test:
+    desc: Run the native tests (tofu only; prints a skip reason under plain terraform)
+    cmds:
+      - |
+        if [ "{{.IAC_BIN}}" = "tofu" ]; then
+          {{.IAC_BIN}} test
+        else
+          echo "skip: the native test suite targets `tofu test` and IAC_BIN resolved to {{.IAC_BIN}}."
+          echo "      install tofu or set IAC_ENGINE=tofu to run it."
+        fi
