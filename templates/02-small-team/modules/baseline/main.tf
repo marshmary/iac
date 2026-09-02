@@ -4,11 +4,14 @@
 locals {
   name_prefix = "${var.project}-${var.environment}"
 
-  tags = {
-    Project   = var.project
-    Env       = var.environment
-    ManagedBy = "iac"
-  }
+  tags = merge(
+    {
+      Project   = var.project
+      Env       = var.environment
+      ManagedBy = "iac"
+    },
+    var.tags,
+  )
 }
 
 # terraform_data needs no provider, so it renders the naming convention into

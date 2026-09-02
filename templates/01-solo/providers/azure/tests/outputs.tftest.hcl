@@ -1,10 +1,15 @@
 # Native test — executed by `task test`, which runs `tofu test`.
-# No mock_provider needed: the only resource (terraform_data) is built into
-# the engine, so this suite runs with zero cloud credentials. `task test`
-# skips with a message when the engine resolves to plain terraform.
+# mock_provider keeps this credential-free: the cloud provider is never
+# configured or called, only its schema is downloaded by `init`. The run
+# applies (locally — terraform_data computes natively, the cloud resource is
+# mocked) so asserts see final values, not "known after apply" placeholders.
+# `task test` skips with a message when the engine resolves to terraform
+# (mock_provider is an OpenTofu extension).
+
+mock_provider "azurerm" {}
 
 run "conventions" {
-  command = plan
+  command = apply
 
   # variables.tf gives `project` no default, so every run must supply it.
   variables {

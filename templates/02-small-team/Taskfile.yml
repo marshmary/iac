@@ -89,7 +89,7 @@ tasks:
       - '{{.IAC_BIN}} plan -var-file={{.ENV}}.tfvars -out=tfplan'
 
   plan-dry:
-    desc: Plan without refresh and with dry_run=true - no cloud API calls
+    desc: Offline plan with fake credentials (AWS only - dry_run var ships with the AWS provider layer)
     deps: [init-backend]
     dir: envs/{{.ENV}}
     cmds:

@@ -44,8 +44,8 @@ tokens by hardcoding values.
 
 | Tier | providers/ handling | Where merged files land |
 |------|---------------------|------------------------|
-| 01 | copy `providers/<cloud>/{backend,provider,starter}.tf` then delete `providers/` | project root |
-| 02 | same three files copied into EVERY `envs/*/` dir, `__ENV__` → dir name, then delete `providers/` | each `envs/<env>/` |
+| 01 | copy every `providers/<cloud>/*.tf` (backend, provider, starter, cloud-only variables) + `providers/<cloud>/tests/` (per-cloud mock test files), then delete `providers/` | project root |
+| 02 | same `.tf` files copied into EVERY `envs/*/` dir, `__ENV__` → dir name, then delete `providers/` | each `envs/<env>/` |
 | 03 | `providers/<cloud>/root-provider.hcl` injected into `root.hcl` between the `>>> CLOUD PROVIDER` / `<<< END CLOUD PROVIDER` markers, then delete `providers/` | `root.hcl` |
 | 04 | nothing stripped — all `platforms/` retained; tokens substituted per-platform (`platforms/aws/**` gets AWS defaults, etc.) | in place |
 
@@ -58,8 +58,10 @@ copy `docs/{conventions.md,engine-duality.md,migrations/}` into the project,
 1. `bash -n scripts/*.sh tests/*.sh` — syntax.
 2. PowerShell parse check on `.ps1` files.
 3. `tests/gen-manifests.sh` — regenerate golden manifests; review the diff.
-4. `tests/run-all.sh` — full matrix if CLIs exist; with no CLIs installed it
-   still runs T0 (init into scratch + manifest compare + token sweep).
+4. `tests/run-in-docker.sh` — the full T0–T5 matrix in the pinned runner
+   container (docker/podman auto-detected; no host CLIs needed). This is the
+   authoritative gate. Plain `tests/run-all.sh` works too when CLIs exist;
+   with none installed it still runs T0 (init + manifest compare + sweep).
 5. Structural sweep: every tier has `AGENTS.md`, `README.md`, `Taskfile.yml`,
    `.pre-commit-config.yaml`, `.tflint.hcl`, both version-pin files
    (+ `.terragrunt-version` for tiers 03/04).

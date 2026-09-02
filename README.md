@@ -59,7 +59,10 @@ dir and runs a dependency-graded pyramid:
 | T6 | LocalStack / Azurite full apply (opt-in) | Docker |
 
 Details: `docs/testing.md`. The generated project itself carries the same
-checks as `task check` (fully offline) so correctness is re-verifiable anywhere.
+checks as `task check` (fully offline) so correctness is re-verifiable
+anywhere. No CLIs installed? `tests/run-in-docker.sh` runs the entire matrix
+inside a pinned container (tofu + terraform + terragrunt + tflint + task +
+conftest; docker or podman).
 
 ## Repo map
 

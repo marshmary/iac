@@ -65,23 +65,32 @@ mkdir -p "$DEST"
 cp -a "$SRC/." "$DEST/"
 
 # --- tier-specific provider merge -------------------------------------------------
+merge_provider_tests() { # providers/<cloud>/tests/ -> <dest>/tests/ (e.g. per-cloud mock test files)
+  if [ -d "$DEST/providers/$PROVIDER/tests" ]; then
+    mkdir -p "$DEST/tests"
+    cp -a "$DEST/providers/$PROVIDER/tests/." "$DEST/tests/"
+  fi
+}
+
 case "$TIER" in
   01)
-    for f in backend.tf provider.tf starter.tf; do
-      [ -f "$DEST/providers/$PROVIDER/$f" ] || { echo "error: missing $f for $PROVIDER" >&2; exit 1; }
-      mv "$DEST/providers/$PROVIDER/$f" "$DEST/$f"
+    for src in "$DEST"/providers/$PROVIDER/*.tf; do
+      [ -f "$src" ] || { echo "error: no provider .tf files for $PROVIDER" >&2; exit 1; }
+      mv "$src" "$DEST/$(basename "$src")"
     done
+    merge_provider_tests
     rm -rf "$DEST/providers"
     ;;
   02)
     for envdir in "$DEST"/envs/*/; do
       [ -d "$envdir" ] || continue
       envname="$(basename "$envdir")"
-      for f in backend.tf provider.tf starter.tf; do
-        [ -f "$DEST/providers/$PROVIDER/$f" ] || { echo "error: missing $f for $PROVIDER" >&2; exit 1; }
-        sed "s/__ENV__/$envname/g" "$DEST/providers/$PROVIDER/$f" > "$envdir/$f"
+      for src in "$DEST"/providers/$PROVIDER/*.tf; do
+        [ -f "$src" ] || { echo "error: no provider .tf files for $PROVIDER" >&2; exit 1; }
+        sed "s/__ENV__/$envname/g" "$src" > "$envdir/$(basename "$src")"
       done
     done
+    merge_provider_tests
     rm -rf "$DEST/providers"
     ;;
   03)

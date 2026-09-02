@@ -6,3 +6,10 @@
 plugin "terraform" {
   enabled = true
 }
+
+# The init-merged cloud layer keeps its variables/resources in their own
+# files (dry_run.tf, starter.tf, backend.tf); the standard-structure rule
+# would demand variables.tf/main.tf and fight the merge contract.
+rule "terraform_standard_module_structure" {
+  enabled = false
+}

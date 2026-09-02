@@ -54,7 +54,7 @@ tasks:
         else
           echo "conftest: NOT FOUND - task policy-check will fail; see policy/README.md"
         fi
-      - echo "Resolved: TG={{.TG_BIN}} engine={{.IAC_BIN}} (IAC_ENGINE={{.IAC_ENGINE}}) TG_ARGS={{.TG_ARGS}}"
+      - 'echo "Resolved: TG={{.TG_BIN}} engine={{.IAC_BIN}} (IAC_ENGINE={{.IAC_ENGINE}}) TG_ARGS={{.TG_ARGS}}"'
 
   hclfmt:
     desc: Format every Terragrunt HCL file in the repo (in place)

@@ -7,9 +7,3 @@ variable "project" {
     error_message = "project must be 3-32 chars of lowercase letters, digits and hyphens, starting and ending alphanumeric."
   }
 }
-
-variable "dry_run" {
-  type        = bool
-  default     = false
-  description = "Skips provider credential/account checks so plans run without cloud API calls (task plan-dry). Leave false for real plans and applies."
-}

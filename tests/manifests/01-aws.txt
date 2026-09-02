@@ -18,6 +18,7 @@
 ./docs/migrations/01-to-02.md
 ./docs/migrations/02-to-03.md
 ./docs/migrations/03-to-04.md
+./dry_run.tf
 ./main.tf
 ./outputs.tf
 ./prod.tfvars

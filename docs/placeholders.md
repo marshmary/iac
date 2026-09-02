@@ -23,8 +23,8 @@ substitutes them at instantiation and then **fails if any survive**
 ## Rules for template maintainers
 
 1. Tokens appear ONLY in: backend files, provider files, starter resources,
-   tfvars `project` values, Terragrunt `generate` contents, and Taskfile
-   backend snippets.
+   cloud-layer variable files, tfvars `project` values, Terragrunt `generate`
+   contents, and Taskfile backend snippets.
 2. Never pre-substitute a "sample" value — a half-substituted template passes
    the token sweep and ships broken.
 3. Adding a token = update this table + both init scripts + `tests/` sweep.

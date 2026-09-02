@@ -11,12 +11,12 @@ locals {
   environment = var.environment
 
   # Resource name prefix, e.g. "my-app-dev".
-  name_prefix = "${var.project}-${var.environment}"
+  name_prefix = "${local.project}-${local.environment}"
 
   # Mandatory tags for every taggable resource.
   common_tags = {
-    Project   = var.project
-    Env       = var.environment
+    Project   = local.project
+    Env       = local.environment
     ManagedBy = "iac"
   }
 }

@@ -21,6 +21,7 @@
 ./envs/dev/README.md
 ./envs/dev/backend.tf
 ./envs/dev/dev.tfvars
+./envs/dev/dry_run.tf
 ./envs/dev/main.tf
 ./envs/dev/outputs.tf
 ./envs/dev/provider.tf
@@ -28,6 +29,7 @@
 ./envs/dev/variables.tf
 ./envs/prod/README.md
 ./envs/prod/backend.tf
+./envs/prod/dry_run.tf
 ./envs/prod/main.tf
 ./envs/prod/outputs.tf
 ./envs/prod/prod.tfvars
@@ -36,6 +38,7 @@
 ./envs/prod/variables.tf
 ./envs/staging/README.md
 ./envs/staging/backend.tf
+./envs/staging/dry_run.tf
 ./envs/staging/main.tf
 ./envs/staging/outputs.tf
 ./envs/staging/provider.tf

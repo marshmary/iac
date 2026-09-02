@@ -18,4 +18,5 @@ module "baseline" {
   source      = "../../modules/baseline"
   project     = var.project
   environment = local.env
+  tags        = local.common_tags
 }

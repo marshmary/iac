@@ -33,6 +33,22 @@ tests/gen-manifests.sh            # regenerate golden trees after deliberate str
 
 PowerShell users: `tests/run-all.ps1` mirrors T0–T2.
 
+## Full matrix in a container (zero host installs)
+
+```sh
+tests/run-in-docker.sh                       # builds the pinned runner image, runs the whole matrix
+tests/run-in-docker.sh tofu fmt -check -recursive templates/01-solo   # ad-hoc command, pinned toolchain
+```
+
+`tests/docker/Dockerfile.runner` bundles tofu, terraform, terragrunt,
+tflint, go-task and conftest at the exact versions the templates declare
+(same as the version-pin files) — one image, no version skew, no host
+installs; docker or podman is auto-detected. Official per-tool images exist
+(`hashicorp/terraform` on Docker Hub, `ghcr.io/opentofu/opentofu`) but
+OpenTofu's image is deprecated for direct use, and a single runner image is
+what makes T1–T5 run in one shot. This is the recommended gate before any
+change to templates or scripts.
+
 ## Inside a generated project
 
 `task check` = T1 fmt + T2 backend-less init/validate (+ Terragrunt hcl

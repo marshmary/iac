@@ -17,7 +17,7 @@ locals {
 # providers and zero credentials — it only renders the convention. Replace
 # with real resources as this module grows (keep the same inputs/outputs
 # contract so units do not churn).
-terraform_data "this" {
+resource "terraform_data" "this" {
   input = {
     name_prefix = local.name_prefix
     tags        = local.tags

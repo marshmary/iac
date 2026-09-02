@@ -1,0 +1,46 @@
+# Full test-matrix runner for the iac template catalog (docs/testing.md).
+# Self-built rather than FROM ghcr.io/opentofu/opentofu (deprecated for direct
+# use) or gruntwork/terragrunt (binary-placement caveats): we pin every tool
+# to the exact versions the templates declare in their version files.
+#
+# Build: podman build -f tests/docker/Dockerfile.runner -t iac-test-runner tests/docker
+# Run:   tests/run-in-docker.sh            (mounts the repo, runs tests/run-all.sh)
+FROM alpine:3.20
+
+ARG TARGETARCH
+ARG TOFU_VERSION=1.9.0
+ARG TF_VERSION=1.9.0
+ARG TG_VERSION=0.72.6
+ARG TFLINT_VERSION=0.53.0
+ARG TASK_VERSION=3.39.2
+ARG CONFTEST_VERSION=0.55.0
+
+RUN apk add --no-cache bash curl unzip git grep findutils coreutils ca-certificates && \
+    case "${TARGETARCH}" in \
+      arm64|aarch64) ARCH=arm64;  CONF_ARCH=aarch64 ;; \
+      *)             ARCH=amd64;  CONF_ARCH=x86_64   ;; \
+    esac && \
+    echo "installing tools for linux/${ARCH}" && \
+    curl -fsSL "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_${ARCH}.zip" -o /tmp/tofu.zip && \
+      unzip -o /tmp/tofu.zip -d /usr/local/bin tofu && \
+    curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${ARCH}.zip" -o /tmp/tf.zip && \
+      unzip -o /tmp/tf.zip -d /usr/local/bin terraform && \
+    curl -fsSL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_${ARCH}" -o /usr/local/bin/terragrunt && \
+    curl -fsSL "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${ARCH}.zip" -o /tmp/tflint.zip && \
+      unzip -o /tmp/tflint.zip -d /usr/local/bin tflint && \
+    curl -fsSL "https://github.com/go-task/task/releases/download/v${TASK_VERSION}/task_linux_${ARCH}.tar.gz" | tar -xz -C /usr/local/bin task && \
+    curl -fsSL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_${CONF_ARCH}.tar.gz" | tar -xz -C /usr/local/bin conftest && \
+    chmod +x /usr/local/bin/tofu /usr/local/bin/terraform /usr/local/bin/terragrunt \
+             /usr/local/bin/tflint /usr/local/bin/task /usr/local/bin/conftest && \
+    rm -rf /tmp/*.zip && \
+    tofu --version && terraform --version && terragrunt --version && \
+    tflint --version && task --version && conftest --version
+
+# Shared provider-download cache so the matrix downloads each provider once.
+RUN mkdir -p /tmp/.terraform-plugin-cache
+ENV TF_PLUGIN_CACHE_DIR=/tmp/.terraform-plugin-cache \
+    TF_IN_AUTOMATION=1
+
+WORKDIR /work
+ENTRYPOINT ["/bin/bash"]
+CMD ["tests/run-all.sh"]

@@ -17,3 +17,9 @@ variable "environment" {
     error_message = "environment must be a short lowercase slug (e.g. dev, staging, prod)."
   }
 }
+
+variable "tags" {
+  type        = map(string)
+  default     = {}
+  description = "Extra tags from the calling env root, merged over the baseline convention tags."
+}

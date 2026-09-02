@@ -13,9 +13,3 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
-
-variable "dry_run" {
-  description = "AWS only: flips the provider skip_* flags so `task plan-dry` can plan offline with fake credentials. Must stay false for real plans and applies."
-  type        = bool
-  default     = false
-}

@@ -51,24 +51,31 @@ New-Item -ItemType Directory -Path $Dest -Force | Out-Null
 Copy-Item -Path (Join-Path $Src '*') -Destination $Dest -Recurse -Force
 
 # --- tier-specific provider merge ---------------------------------------------------
+function Merge-ProviderTests([string]$cloud) { # providers/<cloud>/tests/ -> <dest>/tests/
+  $provTests = Join-Path $Dest "providers/$cloud/tests"
+  if (Test-Path $provTests) {
+    New-Item -ItemType Directory -Path (Join-Path $Dest 'tests') -Force | Out-Null
+    Copy-Item -Path (Join-Path $provTests '*') -Destination (Join-Path $Dest 'tests') -Force
+  }
+}
 switch ($Tier) {
   '01' {
-    foreach ($f in 'backend.tf', 'provider.tf', 'starter.tf') {
-      $p = Join-Path $Dest "providers/$Provider/$f"
-      if (-not (Test-Path $p)) { throw "missing $f for $Provider" }
-      Move-Item $p (Join-Path $Dest $f)
-    }
+    $provFiles = Get-ChildItem (Join-Path $Dest "providers/$Provider") -Filter *.tf -File
+    if (-not $provFiles) { throw "no provider .tf files for $Provider" }
+    foreach ($f in $provFiles) { Move-Item $f.FullName (Join-Path $Dest $f.Name) }
+    Merge-ProviderTests $Provider
     Remove-Item -Recurse -Force (Join-Path $Dest 'providers')
   }
   '02' {
+    $provFiles = Get-ChildItem (Join-Path $Dest "providers/$Provider") -Filter *.tf -File
+    if (-not $provFiles) { throw "no provider .tf files for $Provider" }
     foreach ($envdir in Get-ChildItem (Join-Path $Dest 'envs') -Directory) {
-      foreach ($f in 'backend.tf', 'provider.tf', 'starter.tf') {
-        $p = Join-Path $Dest "providers/$Provider/$f"
-        if (-not (Test-Path $p)) { throw "missing $f for $Provider" }
-        $content = [System.IO.File]::ReadAllText($p) -replace '__ENV__', $envdir.Name
-        [System.IO.File]::WriteAllText((Join-Path $envdir.FullName $f), $content)
+      foreach ($f in $provFiles) {
+        $content = [System.IO.File]::ReadAllText($f.FullName) -replace '__ENV__', $envdir.Name
+        [System.IO.File]::WriteAllText((Join-Path $envdir.FullName $f.Name), $content)
       }
     }
+    Merge-ProviderTests $Provider
     Remove-Item -Recurse -Force (Join-Path $Dest 'providers')
   }
   '03' {
