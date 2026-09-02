@@ -14,7 +14,10 @@ tokens by hardcoding values.
 - `templates/04-large-terragrunt/` — `common/` registries + `platforms/{aws,azure,gcp}/` + `policy/` + `runbooks/`
 - `scripts/init-project.{sh,ps1}` — instantiation (contract below)
 - `tests/` — `run-all.{sh,ps1}` matrix runner, `manifests/` golden trees, fixtures
+- `playground/` — disposable LocalStack harness (`up.sh`/`down.sh`) to apply all
+  four tiers without a cloud account; artifacts under `playground/projects/` gitignored
 - `docs/` — conventions (authoritative), placeholders, engine-duality, testing, references, migrations
+- `CONTRIBUTING.md` — trunk-based workflow + commit style (see below)
 - Each tier folder also contains its own `AGENTS.md` — that one ships INTO
   generated projects and guides agents working there. Keep the two audiences separate.
 
@@ -73,3 +76,11 @@ copy `docs/{conventions.md,engine-duality.md,migrations/}` into the project,
 - New check → `tests/run-all.{sh,ps1}` + `docs/testing.md`.
 - New migration guide → `docs/migrations/NN-to-MM.md`.
 - New tier → extend the table above, README, run-all, and gen-manifests.
+
+## Commit conventions
+
+Trunk-based: commit straight to `main`; no long-lived branches, no force-push,
+no amend of pushed commits. Conventional Commits — `type(scope): subject`,
+blank line, `- ` bullets per change; imperative subject, one concern per
+commit. Full rules: `CONTRIBUTING.md`. Before committing, `git status`,
+`git diff`, `git log --oneline -8`; stage only intended files; keep `main` green.
