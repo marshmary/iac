@@ -1,0 +1,37 @@
+# Single compose file powering the disposable playground (playground/README.md).
+# One `docker compose up -d` brings up every local emulator needed to run real
+# init/plan/apply/destroy cycles against all four tiers WITHOUT a cloud account.
+#
+# Coverage notes (mirror docs/testing.md):
+#   - localstack  -> AWS: S3 + DynamoDB (the s3 backend + lock table) and the
+#                    aws_s3_bucket starter in tiers 01/02. Point AWS_ENDPOINT_URL
+#                    at localhost:4566.
+#   - azurite     -> Azure storage only (sufficient for the azurerm backend, not
+#                    for resource-group applies). GCP has no free emulator; use
+#                    offline plan/validate there.
+services:
+  localstack:
+    # Pin the community/OSS image: the plain `latest` tag now pulls the Pro
+    # edition, which exits with "License activation failed" unless a
+    # LOCALSTACK_AUTH_TOKEN is set. `:4` is the OSS release line and needs none.
+    image: localstack/localstack:4
+    container_name: iac-playground-localstack
+    environment:
+      - SERVICES=s3,dynamodb,sts,iam
+      - DEBUG=0
+    ports:
+      - "4566:4566"          # single AWS edge endpoint
+    volumes:
+      - localstack-data:/var/lib/localstack
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: iac-playground-azurite
+    ports:
+      - "10000:10000"        # blob endpoint for the azurerm backend
+    volumes:
+      - azurite-data:/data
+
+volumes:
+  localstack-data:
+  azurite-data:

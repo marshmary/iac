@@ -34,3 +34,7 @@ Thumbs.db
 
 # Test scratch output
 tests/scratch/
+
+# Playground runtime output (source: compose.yml, up.sh, down.sh, README.md stay tracked)
+playground/projects/
+playground/logs/
