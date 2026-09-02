@@ -1,15 +1,15 @@
 # Bootstrap — AWS (one-time, before the first apply)
 
 Creates the shared remote-state backend every environment in this repo
-uses: one S3 bucket for state plus one DynamoDB table for locking. The
-values you choose here land in the injected backend block in `root.hcl`
-(bucket, table and region placeholders are substituted by
-`scripts/init-project` at project creation).
+uses: one S3 bucket for state with S3-native locking (`use_lockfile = true`),
+so no DynamoDB table is needed. The values you choose here land in the
+injected backend block in `root.hcl` (bucket and region placeholders are
+substituted by `scripts/init-project` at project creation).
 
 ## Prerequisites
 
-- AWS CLI v2 installed and authenticated with permission to create S3 and
-  DynamoDB resources: `aws sts get-caller-identity`
+- AWS CLI v2 installed and authenticated with permission to create S3
+  resources: `aws sts get-caller-identity`
 
 ## 1. State bucket
 
@@ -31,20 +31,7 @@ aws s3api put-public-access-block --bucket "$BUCKET" \
   BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 ```
 
-## 2. Lock table
-
-```bash
-export TABLE=<dynamo-table-name>         # e.g. <project>-tfstate-locks
-
-aws dynamodb create-table \
-  --table-name "$TABLE" \
-  --attribute-definitions AttributeName=LockID,AttributeType=S \
-  --key-schema AttributeName=LockID,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST \
-  --region "$AWS_REGION"
-```
-
-## 3. First run
+## 2. First run
 
 Credentials come from the standard AWS chain (env vars, SSO, profiles) —
 see `.env.example` for the env-var variant. The engine binary (tofu or
@@ -57,3 +44,10 @@ task plan ENV=dev              # review the plan
 task apply ENV=dev             # apply exactly what was reviewed
 task run-all-plan ENV=dev      # once more components exist
 ```
+
+## Optional: lifecycle rule for lock objects
+
+S3-native locking writes a `<key>.tflock` object on every lock/unlock. On a
+versioned bucket that accumulates lock-object versions; add a lifecycle rule
+to expire noncurrent `.tflock` versions (and old state versions) after a few
+days if you want to keep version counts down.

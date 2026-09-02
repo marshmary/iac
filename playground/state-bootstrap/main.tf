@@ -1,8 +1,10 @@
 # Provider-free bootstrap used by playground/up.sh to create the S3 state
-# bucket + DynamoDB lock table INSIDE LocalStack before the first apply.
-# The real backend.tf in the project root points at the bucket/table made here.
+# bucket INSIDE LocalStack before the first apply. Locking is S3-native
+# (use_lockfile = true in the project's backend.tf), so no DynamoDB table is
+# needed here. The real backend.tf in the project root points at the bucket
+# made here.
 #
-# LocalStack emulates S3 + DynamoDB, so this runs fully offline:
+# LocalStack emulates S3, so this runs fully offline:
 #     AWS_ENDPOINT_URL=http://localhost:4566 \
 #     AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
 #     tofu init -backend=false && tofu apply -auto-approve
@@ -42,11 +44,6 @@ variable "bucket" {
   type        = string
 }
 
-variable "table" {
-  description = "Name of the DynamoDB lock table."
-  type        = string
-}
-
 resource "aws_s3_bucket" "state" {
   bucket = var.bucket
 }
@@ -55,16 +52,5 @@ resource "aws_s3_bucket_versioning" "state" {
   bucket = aws_s3_bucket.state.id
   versioning_configuration {
     status = "Enabled"
-  }
-}
-
-resource "aws_dynamodb_table" "lock" {
-  name         = var.table
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
   }
 }

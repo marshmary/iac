@@ -6,11 +6,12 @@ binary for you.
 
 ## Mechanism
 
-1. `required_version = ">= 1.6.0, < 2.0.0"` — satisfied by both engines
-   (OpenTofu versions itself as 1.6+).
+1. `required_version = ">= 1.11.0, < 2.0.0"` — satisfied by both engines
+   (Terraform 1.11+ and OpenTofu 1.11+).
 2. Both pin files ship: `.terraform-version` (tfenv/tenv) and
-   `.opentofu-version` (tofuenv/tenv), same value — so the version manager of
-   whichever engine you use installs the same pin.
+   `.opentofu-version` (tofuenv/tenv), pinned independently — Terraform
+   `1.16.0`, OpenTofu `1.12.0` — so the version manager of whichever engine
+   you use installs that engine's own pin.
 3. Every Taskfile resolves the binary:
 
    ```
@@ -34,6 +35,13 @@ rm .terraform.lock.hcl && task init-backend   # re-lock with the active engine
 
 Commit the regenerated lockfile. Provider versions themselves are identical —
 only the recorded hashes differ.
+
+## State locking (AWS S3 backend)
+
+The AWS S3 backend uses S3-native locking (`use_lockfile = true`) instead of a
+DynamoDB table. Both engines support it: Terraform 1.11+ and OpenTofu 1.9+
+(the `required_version` floor and both pins satisfy this). The lock object is
+`<key>.tflock` next to the state object.
 
 ## What is engine-specific
 

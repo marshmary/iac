@@ -3,5 +3,5 @@
 # providers/<cloud>/ at instantiation) so this project stays single-cloud.
 # The block name "terraform" is identical under both terraform and tofu.
 terraform {
-  required_version = ">= 1.6.0, < 2.0.0"
+  required_version = ">= 1.11.0, < 2.0.0"
 }

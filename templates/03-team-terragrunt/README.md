@@ -26,9 +26,9 @@ Nothing in this repo hardcodes one engine.
 ├── root.hcl                   # shared Terragrunt config + injected cloud block
 ├── .pre-commit-config.yaml    # fmt / validate / tflint / docs hooks
 ├── .tflint.hcl                # tflint config (core terraform plugin only)
-├── .terraform-version         # 1.9.0 — tfenv/tenv pin
-├── .opentofu-version          # 1.9.0 — tofu pin
-├── .terragrunt-version        # 0.72.6 — tgenv pin
+├── .terraform-version         # 1.16.0 — tfenv/tenv pin
+├── .opentofu-version          # 1.12.0 — tofu pin
+├── .terragrunt-version        # 1.1.4 — tgenv pin
 ├── .env.example               # credentials template (never commit .env)
 ├── envs/
 │   ├── dev/
@@ -47,7 +47,7 @@ Nothing in this repo hardcodes one engine.
 │       ├── examples/basic/    # minimal usage example
 │       └── tests/             # native .tftest.hcl suite
 └── bootstrap/
-    ├── aws.md                 # create the S3 + DynamoDB state backend
+    ├── aws.md                 # create the S3 state backend
     ├── azure.md               # create the RG + storage + container backend
     └── gcp.md                 # create the versioned GCS bucket backend
 ```
@@ -82,9 +82,9 @@ guarded to the tofu engine).
 
 ## Terragrunt notes
 
-- Version pins: `.terragrunt-version` (read by tgenv; pinned to 0.72.6),
-  `.terraform-version` and `.opentofu-version` (both 1.9.0, read by
-  tfenv/tenv).
+- Version pins: `.terragrunt-version` (read by tgenv; pinned to 1.1.4),
+  `.terraform-version` (1.16.0) and `.opentofu-version` (1.12.0), read by
+  tfenv/tenv.
 - The `generate` blocks injected into `root.hcl` write `backend.tf` and
   `provider.tf` into each unit's `.terragrunt-cache` working directory at
   runtime — nothing generated is ever committed.

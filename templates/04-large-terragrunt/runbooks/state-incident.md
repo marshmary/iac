@@ -27,24 +27,23 @@ Symptom: `Error acquiring the state lock` on plan/apply, long after any real
 run ended. First: genuinely check nobody is running anything (team chat), and
 that no CI pipeline is mid-apply.
 
-### AWS (DynamoDB lock)
+### AWS (S3-native lock)
 
-The `LockID` is `<bucket>/<key>-md5(<bucket>/<key>)`. Find it, then delete it:
-
-```sh
-aws dynamodb scan --table-name <lock-table> \
-  --filter-expression "begins_with(LockID, :p)" \
-  --expression-attribute-values '{":p":{"S":"<state-bucket>/envs/dev/baseline"}}'
-
-aws dynamodb delete-item --table-name <lock-table> \
-  --key '{"LockID": {"S": "<LockID-from-scan>"}}'
-```
-
-Prefer the engine's own unlock when it reports a lock ID:
+Locking uses a `.tflock` object next to the state object
+(`<key>.tflock`). Prefer the engine's own unlock when it reports a lock ID:
 
 ```sh
 cd platforms/aws/envs/dev/baseline && terragrunt force-unlock <LOCK_ID> --tf-path tofu
 ```
+
+If the lock object is stale (no live run holds it), delete it manually:
+
+```sh
+aws s3 rm s3://<state-bucket>/envs/dev/baseline/terraform.tfstate.tflock
+```
+
+Only do this after confirming nobody is running and no CI pipeline is
+mid-apply.
 
 ### Azure (blob lease)
 
@@ -71,7 +70,7 @@ resolves:
 task engine-check   # shows the binary tasks use; use the same one below
 
 terragrunt import --tf-path tofu \
-  --terragrunt-working-dir platforms/aws/envs/dev/baseline \
+  --working-dir platforms/aws/envs/dev/baseline \
   aws_s3_bucket.imported_example my-imported-bucket-name
 ```
 

@@ -17,11 +17,11 @@ generate "backend" {
   contents  = <<EOF
 terraform {
   backend "s3" {
-    bucket         = "__STATE_BUCKET__"
-    key            = "${path_relative_to_include()}/terraform.tfstate"
-    region         = "__REGION__"
-    dynamodb_table = "__DYNAMO_TABLE__"
-    encrypt        = true
+    bucket       = "__STATE_BUCKET__"
+    key          = "${path_relative_to_include()}/terraform.tfstate"
+    region       = "__REGION__"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 EOF

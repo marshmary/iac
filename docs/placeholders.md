@@ -11,7 +11,6 @@ substitutes them at instantiation and then **fails if any survive**
 | `__PROJECT_NAME__` | everywhere | the `-n/--name` value |
 | `__REGION__` | provider/backend files | aws `us-east-1`, azure `eastus`, gcp `us-central1` (override with `--region`) |
 | `__STATE_BUCKET__` | aws s3 / gcp gcs backends | `<name>-tfstate` |
-| `__DYNAMO_TABLE__` | aws state locking | `<name>-tflock` |
 | `__STATE_RESOURCE_GROUP__` | azure backend | `<name>-tfstate-rg` |
 | `__STATE_STORAGE_ACCOUNT__` | azure backend | first 17 alnum chars of `<name>` + `tfstate` (24-char limit) |
 | `__STATE_CONTAINER__` | azure backend | `tfstate` |

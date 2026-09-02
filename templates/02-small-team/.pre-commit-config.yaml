@@ -23,3 +23,8 @@ repos:
         # env roots are compositions of modules, not documented modules —
         # their READMEs carry no TF_DOCS markers on purpose.
         exclude: ^providers/|^envs/
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

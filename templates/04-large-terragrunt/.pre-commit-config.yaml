@@ -22,9 +22,6 @@ repos:
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.96.1
     hooks:
-      # The workhorse: formats every terragrunt.hcl / root.hcl / env.hcl.
-      - id: terragrunt_fmt
-
       # The *.tf hooks below match NOTHING today (modules are sourced from the
       # external registry, backend/provider are generated into the cache at
       # run time). They activate automatically the moment real .tf files are
@@ -36,3 +33,20 @@ repos:
       # it has nothing to chew on - `task hcl-validate` / `task check` are the
       # real validation gates here (they go through Terragrunt, backend and
       # registry source included).
+
+  # The workhorse: formats every terragrunt.hcl / root.hcl / env.hcl.
+  # Terragrunt 1.x dropped the `hclfmt` subcommand (now `hcl fmt`), so this
+  # local hook drives the current command instead of the upstream hook.
+  - repo: local
+    hooks:
+      - id: terragrunt-fmt
+        name: Terragrunt HCL format
+        language: system
+        entry: terragrunt hcl fmt
+        pass_filenames: false
+        files: \.hcl$
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

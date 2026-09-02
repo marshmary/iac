@@ -16,7 +16,7 @@ playground/
 ├── up.sh                  # instantiate 4 tiers + boot emulators + localize + bootstrap AWS state
 ├── down.sh                # compose down -v (emulators + volumes)
 ├── localize.sh            # inject LocalStack endpoint + path-style S3 into generated projects
-├── state-bootstrap/main.tf # provider-free module that creates the S3 bucket + lock table
+├── state-bootstrap/main.tf # provider-free module that creates the S3 bucket
 ├── projects/              # generated tier projects (gitignored, disposable)
 └── logs/                  # up.sh smoke log (gitignored)
 ```
@@ -39,7 +39,7 @@ playground/down.sh          # stop + remove emulators (projects/ left for inspec
 
 | Tier | Emulator used | Real apply coverage |
 |------|---------------|---------------------|
-| 01 | LocalStack | `aws_s3_bucket` starter + S3/DynamoDB backend |
+| 01 | LocalStack | `aws_s3_bucket` starter + S3 backend (native locking) |
 | 02 | LocalStack | `aws_s3_bucket` starter (per env) + backend |
 | 03 | LocalStack (backend only) | `baseline` component is `terraform_data` (provider-free), applies offline; remote state via LocalStack |
 | 04 | LocalStack (backend only) | `baseline` component provider-free; registry modules (`git::`) are placeholders until replaced |
@@ -56,7 +56,7 @@ Azure storage only (enough for the `azurerm` backend, not resource groups).
    bucket URLs (`bucket.localhost`) don't route. `localize.sh` injects
    `endpoint` + `use_path_style` + `skip_*` into the generated S3 backends and
    `s3_use_path_style` into the AWS providers, so real applies work. The state
-   backend bootstrap is idempotent (imports any pre-existing bucket/table from
+   backend bootstrap is idempotent (imports any pre-existing bucket from
    the persistent LocalStack volume before applying).
 
 ## Offline-only usage (no Docker, no emulators)

@@ -57,19 +57,19 @@ locals {
 # State backend. The key is the component path relative to this file
 # (envs/<env>/<component>), so with this platform's dedicated bucket the
 # logical state address is <platform>/envs/<env>/<component>/terraform.tfstate.
-# Provision the bucket + DynamoDB lock table once via bootstrap.md - they are
-# deliberately NOT managed in-tree.
+# Provision the bucket once via bootstrap.md - it is deliberately NOT managed
+# in-tree. Locking is S3-native (use_lockfile), no DynamoDB table needed.
 generate "backend" {
   path      = "backend.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
 terraform {
   backend "s3" {
-    bucket         = "__STATE_BUCKET__"
-    key            = "${path_relative_to_include()}/terraform.tfstate"
-    region         = "__REGION__"
-    dynamodb_table = "__DYNAMO_TABLE__"
-    encrypt        = true
+    bucket       = "__STATE_BUCKET__"
+    key          = "${path_relative_to_include()}/terraform.tfstate"
+    region       = "__REGION__"
+    encrypt      = true
+    use_lockfile = true
   }
 }
 EOF

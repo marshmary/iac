@@ -11,6 +11,11 @@
 #      `aws_s3_bucket` sends path-style URLs too (tiers 01/02 only — the
 #      Terragrunt tiers' `generate` provider block ships commented out).
 #
+# State locking is S3-native (`use_lockfile = true` in every AWS backend), which
+# relies on S3 conditional writes (If-None-Match). LocalStack's S3 emulation
+# supports these, so no DynamoDB table is needed; the state bootstrap only
+# creates a versioned bucket.
+#
 # Everything is written under the project's own directory (playground/projects/,
 # gitignored). Templates/ are never touched.
 #
@@ -20,13 +25,13 @@ set -euo pipefail
 proj="${1:?project dir}"; tier="${2:?tier}"; endpoint="${3:-http://localhost:4566}"
 
 # patch_s3_backend <file>: insert LocalStack backend args inside the s3
-# backend block, right after the dynamodb_table line (before its closing brace).
+# backend block, right after the use_lockfile line (before its closing brace).
 patch_s3_backend() {
   local f="$1" tmp
   [ -f "$f" ] || return 0
   tmp="$(mktemp)"
   awk -v ins="    endpoint                    = \"$endpoint\"\n    use_path_style              = true\n    skip_credentials_validation = true\n    skip_requesting_account_id  = true\n    skip_metadata_api_check     = true" '
-    /dynamodb_table/ { print; print ins; next }
+    /use_lockfile/ { print; print ins; next }
     { print }
   ' "$f" > "$tmp"
   mv "$tmp" "$f"
@@ -70,7 +75,7 @@ case "$tier" in
       [ -f "$h" ] || continue
       tmp="$(mktemp)"
       awk -v ins="        endpoint                    = \"$endpoint\"\n        use_path_style              = true\n        skip_credentials_validation = true\n        skip_requesting_account_id  = true\n        skip_metadata_api_check     = true" '
-        /dynamodb_table/ { print; print ins; next }
+        /use_lockfile/ { print; print ins; next }
         { print }
       ' "$h" > "$tmp"
       mv "$tmp" "$h"

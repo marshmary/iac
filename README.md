@@ -51,7 +51,7 @@ dir and runs a dependency-graded pyramid:
 | Level | Check | Needs |
 |-------|-------|-------|
 | T0 | golden-manifest tree compare + zero leftover tokens | nothing (always runs) |
-| T1 | `fmt -check` + `tflint` + `terragrunt hclfmt` | CLIs, no creds |
+| T1 | `fmt -check` + `tflint` + `terragrunt hcl fmt` | CLIs, no creds |
 | T2 | `init -backend=false` + `validate` | CLIs + registry access |
 | T3 | offline `plan -refresh=false` with fake creds | CLIs, no cloud |
 | T4 | OpenTofu native tests (`mock_providers`) | `tofu` |

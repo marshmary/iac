@@ -9,7 +9,7 @@ Level T0 runs with nothing but a POSIX shell installed.
 | Level | Check | Needs | Proves |
 |-------|-------|-------|--------|
 | T0 | golden-manifest tree compare (init → `find \| sort` vs `tests/manifests/`) + zero surviving tokens | shell only | init script, merge rules, substitution |
-| T1 | `fmt -check -recursive`, `tflint`, `terragrunt hclfmt --terragrunt-check` | CLIs, no creds | syntax, lint |
+| T1 | `fmt -check -recursive`, `tflint`, `terragrunt hcl fmt --check` | CLIs, no creds | syntax, lint |
 | T2 | `init -backend=false` + `validate` on every root/unit | CLIs + registry access | configs parse, provider schemas resolve, wiring consistent |
 | T3 | offline plan: `plan -refresh=false -var dry_run=true` with fake creds (`tests/fixtures/*.env`) | CLIs, no cloud | variables/type constraints, starter resources plan |
 | T4 | `tofu test` with native tests (mock-free where possible) | `tofu` | behavioral assertions on modules |

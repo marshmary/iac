@@ -17,7 +17,9 @@ locals {
 terraform {
   # <repo-root>//modules/baseline — Terragrunt copies the tree before the
   # `//` into the unit's .terragrunt-cache and runs the module after it.
-  source = "${find_in_parent_folders("root.hcl")}//modules/baseline"
+  # get_repo_root() (not find_in_parent_folders) returns the repo DIR; the
+  # latter returns the root.hcl FILE path, which breaks the //subdir source.
+  source = "${get_repo_root()}//modules/baseline"
 }
 
 inputs = {

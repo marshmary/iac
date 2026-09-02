@@ -110,7 +110,7 @@ fi
 
 # --- 3. bootstrap AWS state backend in LocalStack --------------------------------
 if [ -n "$RUNNER" ] && [ -n "$ENGINE" ] && curl -fsS http://localhost:4566/_localstack/health >/dev/null 2>&1; then
-  log "=== bootstrapping AWS state backend (bucket + lock table) in LocalStack ==="
+  log "=== bootstrapping AWS state backend (versioned bucket) in LocalStack ==="
   export AWS_ENDPOINT_URL="http://localhost:4566"
   export AWS_ACCESS_KEY_ID="test"
   export AWS_SECRET_ACCESS_KEY="test"
@@ -130,20 +130,19 @@ if [ -n "$RUNNER" ] && [ -n "$ENGINE" ] && curl -fsS http://localhost:4566/_loca
     cp "$PLAY/state-bootstrap/main.tf" "$bootdir/main.tf"
 
     # Idempotency: the LocalStack data volume persists across up.sh runs, so the
-    # bucket/table may already exist. `tofu import` (best-effort, `|| true`) pulls
-    # them into a fresh state so the later apply is a no-op instead of failing
-    # with "ResourceInUseException: Table already exists". On a fresh volume the
-    # imports find nothing and are harmless.
+    # bucket may already exist. `tofu import` (best-effort, `|| true`) pulls it
+    # into a fresh state so the later apply is a no-op instead of failing with
+    # "BucketAlreadyOwnedByYou". On a fresh volume the imports find nothing and
+    # are harmless.
     ok=1
     ( cd "$bootdir" && "$ENGINE" init -backend=false -input=false >>"$LOGS/up.log" 2>&1 ) || ok=0
     ( cd "$bootdir" && "$ENGINE" import aws_s3_bucket.state "$name-tfstate" >>"$LOGS/up.log" 2>&1 ) || true
     ( cd "$bootdir" && "$ENGINE" import aws_s3_bucket_versioning.state "$name-tfstate" >>"$LOGS/up.log" 2>&1 ) || true
-    ( cd "$bootdir" && "$ENGINE" import aws_dynamodb_table.lock "$name-tflock" >>"$LOGS/up.log" 2>&1 ) || true
     ( cd "$bootdir" && "$ENGINE" apply -auto-approve -input=false \
-        -var "bucket=$name-tfstate" -var "table=$name-tflock" >>"$LOGS/up.log" 2>&1 ) || ok=0
+        -var "bucket=$name-tfstate" >>"$LOGS/up.log" 2>&1 ) || ok=0
 
     if [ "$ok" -eq 1 ]; then
-      result PASS "state backend for $name (bucket=$name-tfstate, table=$name-tflock)"
+      result PASS "state backend for $name (bucket=$name-tfstate)"
     else
       result FAIL "state backend for $name (see logs/up.log)"
     fi

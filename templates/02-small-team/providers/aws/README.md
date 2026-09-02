@@ -18,5 +18,5 @@ Any standard AWS credential chain (SSO, shared config/profile) also works.
 
 ## State backend
 
-The S3 bucket and DynamoDB lock table are created once per project - see
-`bootstrap/aws.md` in the repo root. One bucket, one key per env.
+The S3 bucket is created once per project - see `bootstrap/aws.md` in the
+repo root. One bucket, one key per env, S3-native locking (`use_lockfile`).

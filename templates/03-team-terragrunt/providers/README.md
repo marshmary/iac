@@ -11,7 +11,7 @@ instantiation time:
    `root.hcl` with that file's contents (the marker lines themselves are
    kept so the region stays addressable).
 4. Substitutes the placeholder tokens globally (`__PROJECT_NAME__`,
-   `__REGION__`, `__STATE_BUCKET__`, `__DYNAMO_TABLE__`,
+   `__REGION__`, `__STATE_BUCKET__`,
    `__STATE_RESOURCE_GROUP__`, `__STATE_STORAGE_ACCOUNT__`,
    `__STATE_CONTAINER__`, `__GCP_PROJECT__` — only the ones the chosen
    cloud actually uses).

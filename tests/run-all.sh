@@ -139,16 +139,16 @@ engine_loop() { # $1 tier, $2 provider, $3 dest — runs T1..T5 per available en
   # terragrunt structural checks (engine-independent)
   if have terragrunt; then
     case "$tier" in
-      03) ( cd "$dest" && terragrunt hclfmt --terragrunt-check >/dev/null 2>&1 ) \
-             && result PASS "T1/$prov-terragrunt" "hclfmt --terragrunt-check" \
-             || result FAIL "T1/$prov-terragrunt" "hclfmt --terragrunt-check" ;;
+      03) ( cd "$dest" && terragrunt hcl fmt --check >/dev/null 2>&1 ) \
+             && result PASS "T1/$prov-terragrunt" "hcl fmt --check" \
+             || result FAIL "T1/$prov-terragrunt" "hcl fmt --check" ;;
       04) local pc ok=1
            for pc in aws azure gcp; do
              [ -d "$dest/platforms/$pc" ] || continue
-             ( cd "$dest" && terragrunt hclfmt --terragrunt-check >/dev/null 2>&1 ) || ok=0
+             ( cd "$dest" && terragrunt hcl fmt --check >/dev/null 2>&1 ) || ok=0
            done
-           [ "$ok" = 1 ] && result PASS "T1/all-terragrunt" "hclfmt --terragrunt-check (all platforms)" \
-                          || result FAIL "T1/all-terragrunt" "hclfmt failed" ;;
+           [ "$ok" = 1 ] && result PASS "T1/all-terragrunt" "hcl fmt --check (all platforms)" \
+                          || result FAIL "T1/all-terragrunt" "hcl fmt failed" ;;
     esac
   else
     [ "$tier" = 03 -o "$tier" = 04 ] && result SKIP "T1/$prov-terragrunt" "terragrunt not installed"

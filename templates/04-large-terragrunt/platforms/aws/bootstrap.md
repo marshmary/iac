@@ -1,9 +1,9 @@
 # platforms/aws - bootstrap one-pager
 
 Run ONCE per AWS organization, before the first `task plan`. Creates the
-remote-state bucket and the DynamoDB lock table that `root.hcl`'s generated
-backend references. These resources are deliberately NOT managed in-tree -
-they bootstrap the bootstrap.
+remote-state bucket that `root.hcl`'s generated backend references. Locking is
+S3-native (`use_lockfile = true`), so no DynamoDB table is needed. These
+resources are deliberately NOT managed in-tree - they bootstrap the bootstrap.
 
 ## 0. Authenticate
 
@@ -38,15 +38,12 @@ aws s3api put-public-access-block --bucket __STATE_BUCKET__ \
 Versioning is not optional: it is your undo button for state incidents
 (`runbooks/state-incident.md`).
 
-## 2. Create the lock table
+## 2. Lifecycle rule for lock objects (recommended)
 
-```bash
-aws dynamodb create-table --table-name __DYNAMO_TABLE__ \
-  --attribute-definitions AttributeName=LockID,AttributeType=S \
-  --key-schema AttributeName=LockID,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST \
-  --region __REGION__
-```
+S3-native locking writes a `<key>.tflock` object on every lock/unlock. On a
+versioned bucket that accumulates lock-object versions; add a lifecycle rule
+to expire noncurrent `.tflock` versions (and old state versions) after a few
+days to keep version counts down.
 
 ## 3. First run
 
@@ -66,5 +63,5 @@ keys inherit the `envs/<env>/<component>` pattern automatically.
 
 When you wire CI, authenticate via OIDC: `AWS_WEB_IDENTITY_TOKEN_FILE` +
 `AWS_ROLE_ARN` (placeholders in `.env.example`). Never put static keys in the
-pipeline. Permissions floor: read/write on the bucket prefix, read/write on
-the DynamoDB table, `sts:AssumeRole` where applicable.
+pipeline. Permissions floor: read/write on the bucket prefix (state and
+`.tflock` lock objects), `sts:AssumeRole` where applicable.

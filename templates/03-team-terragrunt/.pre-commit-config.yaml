@@ -11,9 +11,6 @@ repos:
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.96.1
     hooks:
-      - id: terragrunt_fmt
-        args:
-          - --args=--terragrunt-check
       - id: terraform_fmt
         exclude: ^providers/
       - id: terraform_validate
@@ -22,3 +19,20 @@ repos:
         exclude: ^providers/
       - id: terraform_docs
         exclude: ^providers/
+
+  # Terragrunt 1.x dropped the `hclfmt` subcommand (now `hcl fmt`); the
+  # upstream terragrunt_fmt hook still invokes `hclfmt`, so this local hook
+  # drives the current command directly.
+  - repo: local
+    hooks:
+      - id: terragrunt-fmt-check
+        name: Terragrunt HCL format check
+        language: system
+        entry: terragrunt hcl fmt --check
+        pass_filenames: false
+        files: \.hcl$
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

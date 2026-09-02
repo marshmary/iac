@@ -127,7 +127,7 @@ map_for() { # $1 = cloud -> prints sed s/// expressions
   local c="$1"
   echo "-e s|__REGION__|$(cloud_region "$c")|g"
   case "$c" in
-    aws)   echo "-e s|__STATE_BUCKET__|$NAME-tfstate|g" "-e s|__DYNAMO_TABLE__|$NAME-tflock|g" "-e s|__AWS_ACCOUNT_ID__|000000000000|g" ;;
+    aws)   echo "-e s|__STATE_BUCKET__|$NAME-tfstate|g" "-e s|__AWS_ACCOUNT_ID__|000000000000|g" ;;
     azure) echo "-e s|__STATE_RESOURCE_GROUP__|$NAME-tfstate-rg|g" "-e s|__STATE_STORAGE_ACCOUNT__|$azure_sa|g" "-e s|__STATE_CONTAINER__|tfstate|g" "-e s|__AZURE_SUBSCRIPTION_ID__|00000000-0000-0000-0000-000000000000|g" ;;
     gcp)   echo "-e s|__STATE_BUCKET__|$NAME-tfstate|g" "-e s|__GCP_PROJECT__|$NAME-project|g" ;;
   esac

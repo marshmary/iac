@@ -115,7 +115,7 @@ function Get-CloudMap([string]$cloud) {
   $r = if ($Region) { $Region } else { $regionByCloud[$cloud] }
   $m = @{ '__REGION__' = $r }
   switch ($cloud) {
-    'aws'   { $m['__STATE_BUCKET__'] = "$Name-tfstate"; $m['__DYNAMO_TABLE__'] = "$Name-tflock"; $m['__AWS_ACCOUNT_ID__'] = '000000000000' }
+    'aws'   { $m['__STATE_BUCKET__'] = "$Name-tfstate"; $m['__AWS_ACCOUNT_ID__'] = '000000000000' }
     'azure' { $m['__STATE_RESOURCE_GROUP__'] = "$Name-tfstate-rg"; $m['__STATE_STORAGE_ACCOUNT__'] = $azureSa; $m['__STATE_CONTAINER__'] = 'tfstate'; $m['__AZURE_SUBSCRIPTION_ID__'] = '00000000-0000-0000-0000-000000000000' }
     'gcp'   { $m['__STATE_BUCKET__'] = "$Name-tfstate"; $m['__GCP_PROJECT__'] = "$Name-project" }
   }

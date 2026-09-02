@@ -3,7 +3,7 @@
 # init/plan/apply/destroy cycles against all four tiers WITHOUT a cloud account.
 #
 # Coverage notes (mirror docs/testing.md):
-#   - localstack  -> AWS: S3 + DynamoDB (the s3 backend + lock table) and the
+#   - localstack  -> AWS: S3 (the s3 backend with native locking) and the
 #                    aws_s3_bucket starter in tiers 01/02. Point AWS_ENDPOINT_URL
 #                    at localhost:4566.
 #   - azurite     -> Azure storage only (sufficient for the azurerm backend, not
@@ -17,7 +17,7 @@ services:
     image: localstack/localstack:4
     container_name: iac-playground-localstack
     environment:
-      - SERVICES=s3,dynamodb,sts,iam
+      - SERVICES=s3,sts,iam
       - DEBUG=0
     ports:
       - "4566:4566"          # single AWS edge endpoint
