@@ -14,9 +14,11 @@ az group create --name "$RG" --location "$LOCATION"
 
 az storage account create \
   --name "$ACCOUNT" --resource-group "$RG" --location "$LOCATION" \
-  --sku Standard_LRS --kind StorageV2 --allow-shared-key-access true
+  --sku Standard_LRS --kind StorageV2 \
+  --min-tls-version TLS1_2 --allow-blob-public-access false
 
-az storage container create --name "$CONTAINER" --account-name "$ACCOUNT"
+az storage container create \
+  --account-name "$ACCOUNT" --name "$CONTAINER" --auth-mode login
 ```
 
 Note: storage account names are globally unique and limited to 24 lowercase

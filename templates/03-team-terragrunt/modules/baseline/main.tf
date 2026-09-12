@@ -5,9 +5,9 @@ locals {
 
   tags = merge(
     {
-      Project     = var.project
-      Environment = var.environment
-      ManagedBy   = "terragrunt"
+      Project   = var.project
+      Env       = var.environment
+      ManagedBy = "iac"
     },
     var.tags,
   )

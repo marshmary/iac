@@ -10,11 +10,13 @@ export AWS_REGION=eu-west-1            # region for state + provider
 PROJECT=my-app                         # must match the project name used at init
 BUCKET=my-app-tfstate                  # S3 names are globally unique - adjust
 
-# State bucket: versioned, public access blocked
+# State bucket: versioned, encrypted, public access blocked
 aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION" \
   --create-bucket-configuration LocationConstraint="$AWS_REGION"
 aws s3api put-bucket-versioning --bucket "$BUCKET" \
   --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket "$BUCKET" \
+  --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 aws s3api put-public-access-block --bucket "$BUCKET" \
   --public-access-block-configuration \
   BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true

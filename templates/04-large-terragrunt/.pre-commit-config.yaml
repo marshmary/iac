@@ -34,15 +34,17 @@ repos:
       # real validation gates here (they go through Terragrunt, backend and
       # registry source included).
 
-  # The workhorse: formats every terragrunt.hcl / root.hcl / env.hcl.
-  # Terragrunt 1.x dropped the `hclfmt` subcommand (now `hcl fmt`), so this
-  # local hook drives the current command instead of the upstream hook.
+  # The workhorse: fails when any terragrunt.hcl / root.hcl / env.hcl is
+  # unformatted (check-only, like tier 03 - a hook must not mutate the tree).
+  # Fix formatting with `task hclfmt`. Terragrunt 1.x dropped the `hclfmt`
+  # subcommand (now `hcl fmt`), so this local hook drives the current command
+  # instead of the upstream hook.
   - repo: local
     hooks:
-      - id: terragrunt-fmt
-        name: Terragrunt HCL format
+      - id: terragrunt-fmt-check
+        name: Terragrunt HCL format check
         language: system
-        entry: terragrunt hcl fmt
+        entry: terragrunt hcl fmt --check
         pass_filenames: false
         files: \.hcl$
 

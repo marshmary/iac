@@ -71,6 +71,12 @@ tasks:
 
   plan-dry:
     desc: Offline plan with fake credentials (AWS - dry_run=true enables the provider skip flags)
+    preconditions:
+      # dry_run.tf ships only with the AWS provider layer; azure/gcp roots
+      # have no dry_run variable, so the plan below would die on an unknown
+      # -var instead of explaining itself.
+      - sh: 'test -f dry_run.tf'
+        msg: 'no dry_run.tf in the project root - plan-dry is AWS-only (the aws provider layer ships it). On azure/gcp use `task plan` against the real cloud.'
     cmds:
       - '{{.IAC_BIN}} plan -refresh=false -out=tfplan -var-file={{.ENV}}.tfvars -var dry_run=true'
 

@@ -92,6 +92,13 @@ tasks:
     desc: Offline plan with fake credentials (AWS only - dry_run var ships with the AWS provider layer)
     deps: [init-backend]
     dir: envs/{{.ENV}}
+    preconditions:
+      # dry_run.tf is merged into each env dir only for aws; azure/gcp envs
+      # have no dry_run variable, so the plan below would die on an unknown
+      # -var instead of explaining itself. Absolute path: go-task does not
+      # guarantee the task dir for preconditions across versions.
+      - sh: test -f "{{.TASKFILE_DIR}}/envs/{{.ENV}}/dry_run.tf"
+        msg: 'envs/{{.ENV}}/dry_run.tf not found - plan-dry is AWS-only. On azure/gcp use `task plan` against the real cloud.'
     cmds:
       # Fake provider creds are enough, e.g. for AWS:
       #   AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake task plan-dry ENV=dev

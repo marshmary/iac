@@ -14,7 +14,7 @@ locals {
   common_tags = {
     Project   = local.project
     Env       = local.env
-    ManagedBy = "terragrunt"
+    ManagedBy = "iac"
   }
 }
 

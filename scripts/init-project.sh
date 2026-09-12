@@ -42,7 +42,7 @@ if [ "$TIER" != "04" ]; then
 else
   PROVIDER="all"
 fi
-echo "$NAME" | grep -Eq '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$' || { echo "error: -n must be kebab-case (a-z, 0-9, -)" >&2; exit 1; }
+echo "$NAME" | grep -Eq '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$' || { echo "error: -n must be kebab-case (a-z, 0-9, -), 1-63 chars, no leading/trailing hyphen" >&2; exit 1; }
 
 case "$TIER" in
   01) TIER_DIR="01-solo" ;;

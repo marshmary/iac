@@ -25,6 +25,11 @@ aws s3api put-bucket-encryption --bucket "$BUCKET" \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 # Expected output: none (empty)
 
+aws s3api put-public-access-block --bucket "$BUCKET" \
+  --public-access-block-configuration \
+  BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+# Expected output: none (empty)
+
 echo "STATE_BUCKET=$BUCKET  REGION=$AWS_REGION"
 ```
 

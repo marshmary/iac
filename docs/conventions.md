@@ -8,7 +8,9 @@ generated project; agents and humans both follow them.
 - Directories: `kebab-case`. Root files: `snake_case.tf`.
 - Variables/outputs/locals: `snake_case`; resources: `snake_case` with a
   semantic name (`starter`, `this`).
-- Projects: kebab-case slug (`my-app`), enforced by the init script.
+- Projects: kebab-case slug (`my-app`), 1–63 chars, no leading/trailing
+  hyphen (cloud name limits), enforced by the init script and re-checked by
+  tier variable validation where the slug is a variable.
 - Azure quirk: resource names embed the prefix `rg-<project>-…` because
   resource groups dislike underscores; storage account names are lowercase
   alphanumeric only (see `docs/placeholders.md` defaults).

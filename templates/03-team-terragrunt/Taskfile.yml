@@ -149,9 +149,11 @@ tasks:
     desc: Run baseline module tests via the native test framework (tofu engine only)
     deps: [engine-check]
     cmds:
+      # Guard on the RESOLVED binary, not IAC_ENGINE: IAC_ENGINE=tofu on a
+      # machine with only terraform must skip, not run terraform test.
       - |
-        if [ "{{.IAC_ENGINE}}" = "tofu" ]; then
+        if [ "{{.IAC_BIN}}" = "tofu" ]; then
           "{{.IAC_BIN}}" -chdir=modules/baseline test
         else
-          echo "Module tests are guarded to OpenTofu in this tier; skipping (IAC_ENGINE={{.IAC_ENGINE}})."
+          echo "Module tests are guarded to OpenTofu in this tier; skipping (resolved binary: {{.IAC_BIN}})."
         fi

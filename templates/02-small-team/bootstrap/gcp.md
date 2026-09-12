@@ -4,8 +4,12 @@ Creates the SHARED backend - one GCS bucket. Every env stores its state under
 its own prefix in the same bucket. Do NOT create per-env buckets.
 
 ```bash
-# Enable required APIs (once per GCP project)
-gcloud services enable storage.googleapis.com
+# Enable required APIs (once per GCP project; the same list tier 01 ships)
+gcloud services enable \
+  cloudresourcemanager.googleapis.com \
+  storage.googleapis.com \
+  compute.googleapis.com \
+  iam.googleapis.com
 
 PROJECT_ID=my-gcp-project              # hosts state AND deploys
 REGION=europe-west1
@@ -17,6 +21,10 @@ gcloud storage buckets create "gs://$BUCKET" \
 
 gcloud storage buckets update "gs://$BUCKET" --versioning
 ```
+
+Keep the bucket private: with UBLA on, grant deployers
+`roles/storage.objectAdmin` on the bucket only - do not widen it to the
+project.
 
 Authenticate with Application Default Credentials
 (`gcloud auth application-default login`) or point

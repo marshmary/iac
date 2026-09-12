@@ -18,10 +18,12 @@ gcloud services enable \
   iam.googleapis.com
 # Expected output: "Operation <name> finished successfully." (~1 min)
 
-# 2) State bucket with versioning — old states stay recoverable.
+# 2) State bucket with versioning — old states stay recoverable. UBLA keeps
+#    access control at the bucket level (no per-object ACL surprises).
 gcloud storage buckets create "gs://$BUCKET" \
   --project="$PROJECT_ID" \
-  --location="$LOCATION"
+  --location="$LOCATION" \
+  --uniform-bucket-level-access
 # Expected output: "Creating gs://<bucket>/ ..." followed by a completion line
 
 gcloud storage buckets update "gs://$BUCKET" --versioning
@@ -29,6 +31,10 @@ gcloud storage buckets update "gs://$BUCKET" --versioning
 
 echo "STATE_BUCKET=$BUCKET"
 ```
+
+Keep the bucket private: with UBLA on, grant deployers
+`roles/storage.objectAdmin` on the bucket only — do not widen it to the
+project.
 
 Then substitute these values in `backend.tf` and `provider.tf`:
 

@@ -18,6 +18,9 @@ repos:
       - id: terraform_tflint
         exclude: ^providers/
       - id: terraform_docs
+        args:
+          - --args=--output-file README.md
+          - --args=--output-mode inject
         exclude: ^providers/
 
   # Terragrunt 1.x dropped the `hclfmt` subcommand (now `hcl fmt`); the

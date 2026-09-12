@@ -52,6 +52,22 @@ OpenTofu's image is deprecated for direct use, and a single runner image is
 what makes T1–T5 run in one shot. This is the recommended gate before any
 change to templates or scripts.
 
+### Policy tooling pins
+
+The runner image is the only place tool versions are pinned for policy work
+(`ARG TFLINT_VERSION`, `ARG CONFTEST_VERSION` in
+`tests/docker/Dockerfile.runner`); the engine/terragrunt pins come from the
+tiers' version files. Generated projects do NOT pin these CLIs themselves —
+treat the runner versions as the reference matrix. Two caveats:
+
+- tflint plugins (the `terraform` ruleset in each tier's `.tflint.hcl`) have
+  no version constraint, so `tflint --init` fetches the latest compatible
+  plugin — rule output can drift independently of the pinned binary. Pin
+  `version` in the plugin block if a project needs reproducible lint output.
+- conftest/OPA: the tier 04 policies use only stable Rego with
+  `future.keywords` bridge imports; verify upgrades with `conftest verify`
+  once policy tests land.
+
 ## Inside a generated project
 
 `task check` = T1 fmt + T2 backend-less init/validate (+ Terragrunt hcl

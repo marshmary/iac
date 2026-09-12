@@ -51,10 +51,10 @@ locals {
   common_tags = merge(
     local.mandatory_tags,
     {
-      Platform    = local.platform
-      Environment = local.env
-      Tier        = local.tier
-      GcpProject  = local.project_id
+      Platform   = local.platform
+      Env        = local.env
+      Tier       = local.tier
+      GcpProject = local.project_id
     },
   )
 }

@@ -12,8 +12,8 @@
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 1 | Verified defects | **Done** |
-| 2 | Cross-tier drift sweep | In progress |
-| 3a | Verification capabilities: pin test, rego tests, dotenv, ps1 parity | Pending |
+| 2 | Cross-tier drift sweep | **Done** |
+| 3a | Verification capabilities: pin test, rego tests, dotenv, ps1 parity | In progress |
 | 3b | Pipeline capabilities: CI skeletons, drift task, security scanning | Pending |
 | 3c | UX & first-run: tier 04 bootstrap, interactive chooser, playground pass | Pending |
 | 4 | Polish: line endings, README prune, Renovate, LICENSE decision | Pending |

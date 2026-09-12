@@ -15,7 +15,7 @@ locals {
   # Mandatory on every taggable resource. Enforced by policy/tags.rego.
   mandatory_tags = {
     Project   = "__PROJECT_NAME__"
-    ManagedBy = "terragrunt"
+    ManagedBy = "iac"
   }
 
   # Optional tags - conventions, NOT enforced by policy. Set them per

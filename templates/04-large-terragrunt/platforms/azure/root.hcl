@@ -47,7 +47,7 @@ locals {
     local.mandatory_tags,
     {
       Platform     = local.platform
-      Environment  = local.env
+      Env          = local.env
       Tier         = local.tier
       Subscription = local.subscription_id
     },

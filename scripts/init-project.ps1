@@ -19,7 +19,7 @@
 param(
   [Parameter(Mandatory = $true)][ValidateSet('01', '02', '03', '04')][string]$Tier,
   [ValidateSet('aws', 'azure', 'gcp', 'all', '')][string]$Provider = '',
-  [Parameter(Mandatory = $true)][ValidatePattern('^[a-z0-9]([a-z0-9-]*[a-z0-9])?$')][string]$Name,
+  [Parameter(Mandatory = $true)][ValidatePattern('^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$')][string]$Name,
   [Parameter(Mandatory = $true)][string]$Dest,
   [ValidateSet('tofu', 'terraform')][string]$Engine = 'tofu',
   [string]$Region = '',

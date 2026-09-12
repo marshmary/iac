@@ -13,7 +13,11 @@ placeholders are substituted by `scripts/init-project` at project creation).
 
 ```bash
 gcloud config set project <project-id>
-gcloud services enable storage.googleapis.com
+gcloud services enable \
+  cloudresourcemanager.googleapis.com \
+  storage.googleapis.com \
+  compute.googleapis.com \
+  iam.googleapis.com
 ```
 
 ## 1. State bucket
@@ -27,6 +31,10 @@ gcloud storage buckets create "gs://$BUCKET" \
 
 gcloud storage buckets update "gs://$BUCKET" --versioning
 ```
+
+Keep the bucket private: with UBLA on, grant deployers
+`roles/storage.objectAdmin` on the bucket only - do not widen it to the
+project.
 
 ## 2. First run
 
