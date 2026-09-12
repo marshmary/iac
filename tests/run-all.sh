@@ -154,6 +154,17 @@ engine_loop() { # $1 tier, $2 provider, $3 dest — runs T1..T5 per available en
     [ "$tier" = 03 -o "$tier" = 04 ] && result SKIP "T1/$prov-terragrunt" "terragrunt not installed"
   fi
 
+  # T5: conftest policy unit tests (tier 04; inline mocks, no plan needed)
+  if [ "$tier" = 04 ]; then
+    if have conftest; then
+      ( cd "$dest" && conftest verify --policy policy/ >/dev/null 2>&1 ) \
+        && result PASS "T5/$tier" "conftest verify (policy unit tests)" \
+        || result FAIL "T5/$tier" "conftest verify (policy unit tests)"
+    else
+      result SKIP "T5/$tier" "conftest not installed"
+    fi
+  fi
+
   # T5: conftest policy assertions (tier 04; requires a produced plan — T3-dependent)
   if [ "$tier" = 04 ]; then
     if have conftest; then
@@ -170,6 +181,13 @@ engine_loop() { # $1 tier, $2 provider, $3 dest — runs T1..T5 per available en
 }
 
 echo "=== iac template test matrix ==="
+
+# T0-level pin consistency (docs/testing.md): version files, runner ARGs and
+# engine-duality docs must name the same engines/terragrunt versions.
+"$REPO_ROOT/tests/check-pins.sh" >/dev/null 2>&1 \
+  && result PASS "T0/pins" "version files = runner ARGs = engine-duality docs" \
+  || result FAIL "T0/pins" "pin drift (run tests/check-pins.sh for details)"
+
 for tier in ${TIERS:-01 02 03 04}; do
   provs="aws azure gcp"; [ "$tier" = 04 ] && provs="all"
   for prov in $provs; do

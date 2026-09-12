@@ -12,7 +12,8 @@
 #     `labels`) MUST define every mandatory tag KEY on it;
 #   - a tag map of null counts as MISSING tags (deny);
 #   - resources without a tags/labels attribute PASS (no tag support);
-#   - destroy-only changes have an empty `after` and PASS.
+#   - destroy-only changes carry `after: null` and PASS (the is_object guard
+#     below; object.get would raise an eval error on null).
 #
 # Sync rule: `mandatory_tags` below MUST mirror common/tags.hcl.
 #
@@ -43,6 +44,8 @@ has_mandatory_tags(t) if {
 deny contains msg if {
   rc := input.resource_changes[_]
   attr := tag_attributes[_]
+  # destroy-only plans ship `after: null`; guard so object.get never sees it
+  is_object(rc.change.after)
   # object.get default `false` distinguishes "no tag attribute" (pass) from
   # "attribute present" - including present-but-null (deny).
   tags := object.get(rc.change.after, attr, false)

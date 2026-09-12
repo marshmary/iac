@@ -40,6 +40,19 @@ pass `tags.rego` (no tag support = nothing to check); `naming.rego` checks a
 deliberately tiny, commented list so failures stay actionable. Tighten both as
 the catalog grows - not before.
 
+## Unit tests (no plan needed)
+
+`policy/tests/*_test.rego` exercise both rule sets against inline mock plan
+resources - including the S3 `bucket`-attribute case and null/destroy-only
+edges. Run them without any cloud or plan:
+
+```sh
+task policy-verify        # = conftest verify --policy policy/
+```
+
+When you change a rule, extend the tests in the same commit: they are the
+executable documentation of what the gate denies and skips.
+
 Sync rule: `tags.rego`'s `mandatory_tags` set MUST mirror
 `common/tags.hcl`'s `locals.mandatory_tags`. Change them in the same commit.
 
@@ -65,6 +78,8 @@ Sync rule: `tags.rego`'s `mandatory_tags` set MUST mirror
 
 ## Wire-in points
 
+- `task policy-verify` - the rule unit tests; run when touching `policy/*.rego`
+  (also wired into the catalog's `tests/run-all.sh`).
 - `task policy-check` - the developer gate; run it between `task plan` and
   `task apply`.
 - pre-commit - intentionally NOT hooked (conftest needs a rendered plan,

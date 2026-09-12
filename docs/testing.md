@@ -8,12 +8,12 @@ Level T0 runs with nothing but a POSIX shell installed.
 
 | Level | Check | Needs | Proves |
 |-------|-------|-------|--------|
-| T0 | golden-manifest tree compare (init → `find \| sort` vs `tests/manifests/`) + zero surviving tokens | shell only | init script, merge rules, substitution |
+| T0 | golden-manifest tree compare (init → `find \| sort` vs `tests/manifests/`) + zero surviving tokens + pin consistency (`tests/check-pins.{sh,ps1}`) | shell only | init script, merge rules, substitution, atomic engine pins |
 | T1 | `fmt -check -recursive`, `tflint`, `terragrunt hcl fmt --check` | CLIs, no creds | syntax, lint |
 | T2 | `init -backend=false` + `validate` on every root/unit | CLIs + registry access | configs parse, provider schemas resolve, wiring consistent |
 | T3 | offline plan: `plan -refresh=false -var dry_run=true` with fake creds (`tests/fixtures/*.env`) | CLIs, no cloud | variables/type constraints, starter resources plan |
 | T4 | `tofu test` with native tests (mock-free where possible) | `tofu` | behavioral assertions on modules |
-| T5 | `tofu show -json tfplan \| conftest test -p policy/` | `conftest` | plans obey tag/naming policy |
+| T5 | `conftest verify` policy unit tests + `tofu show -json tfplan \| conftest test -p policy/` | `conftest` | rules behave as documented; plans obey tag/naming policy |
 | T6 | LocalStack / Azurite real apply via `docker compose -f tests/docker-compose.emulators.yml` | Docker | full lifecycle, opt-in only |
 
 Provider caveats: T3 is guaranteed on AWS for tiers 01–02 (the provider ships
@@ -31,10 +31,11 @@ TIERS="01 03" tests/run-all.sh    # subset
 tests/gen-manifests.sh            # regenerate golden trees after deliberate structure change
 ```
 
-PowerShell users: `tests/run-all.ps1` runs T0 for every tier and, when an
-engine is installed, T2 for tiers 01–02 with a single engine. The rest of the
-pyramid (T1, T2 on terragrunt tiers, T3–T6) is bash-runner territory until
-full ps1 parity lands.
+PowerShell users: `tests/run-all.ps1` mirrors T0–T2 (pin gate, init,
+case-sensitive manifest compare, `task --list`, and per-engine fmt-check +
+init/validate for every engine on PATH). tflint, the terragrunt hcl checks
+and T3–T6 remain bash-runner territory; run those through
+`tests/run-in-docker.sh`.
 
 ## Full matrix in a container (zero host installs)
 

@@ -3,13 +3,16 @@
   PowerShell companion of tests/run-all.sh — the no-cloud test pyramid (docs/testing.md).
 
 .DESCRIPTION
-  Runs T0 (init + golden manifest + token sweep) for every tier x provider.
-  If tofu or terraform is on PATH, also runs T2 (init -backend=false +
-  validate) for the plain tiers (01, 02) with that single engine. No T1
-  fmt-check yet; terragrunt tiers 03/04 and T1/T3-T6 stay bash-runner
-  territory (tests/run-all.sh / tests/run-in-docker.sh) until full parity
-  lands. This companion keeps the structural gate available in a
-  pure-Windows shell.
+  Runs T0 (init + golden manifest + token sweep, plus the pin-consistency
+  gate) for every tier x provider, then T1 (fmt-check, task --list) and T2
+  (init -backend=false + validate) for EVERY engine installed on PATH —
+  tofu and terraform are probed independently, mirroring the bash runner's
+  dual-engine loop.
+
+  Still bash-runner territory (tests/run-all.sh / tests/run-in-docker.sh):
+  T1 tflint and the terragrunt hcl checks, T2 on terragrunt units (they go
+  through `terragrunt`), and all of T3-T6. This companion keeps the
+  structural gate available in a pure-Windows shell.
 #>
 [CmdletBinding()]
 param(
@@ -32,10 +35,17 @@ function Result([string]$status, [string]$label, [string]$detail) {
   }
 }
 
-$engine = $null
+# every installed engine gets its own T1/T2 pass, like the bash runner
+$engines = @()
 foreach ($cand in 'tofu', 'terraform') {
-  if (Get-Command $cand -ErrorAction SilentlyContinue) { $engine = $cand; break }
+  if (Get-Command $cand -ErrorAction SilentlyContinue) { $engines += $cand }
 }
+$haveTask = [bool](Get-Command task -ErrorAction SilentlyContinue)
+
+# T0-level pin consistency: version files vs runner ARGs vs docs
+& (Join-Path $RepoRoot 'tests/check-pins.ps1') *> $null
+if ($LASTEXITCODE -eq 0) { Result PASS 'T0/pins' 'version files = runner ARGs = engine-duality docs' }
+else { Result FAIL 'T0/pins' 'pin drift (run tests/check-pins.ps1 for details)' }
 
 foreach ($tier in $Tiers) {
   $provs = if ($tier -eq '04') { @('all') } else { @('aws', 'azure', 'gcp') }
@@ -66,22 +76,51 @@ foreach ($tier in $Tiers) {
       Result SKIP "T0/$label" 'no golden manifest'
     }
 
-    if ($engine -and ($tier -eq '01' -or $tier -eq '02')) {
-      $roots = if ($tier -eq '01') { @('.') } else { (Get-ChildItem (Join-Path $dest 'envs') -Directory | ForEach-Object { 'envs/' + $_.Name }) }
+    if ($haveTask) {
+      Push-Location $dest
+      task --list *> $null
+      $taskExit = $LASTEXITCODE
+      Pop-Location
+      if ($taskExit -eq 0) { Result PASS "T1/$label/taskfile" 'task --list parses' }
+      else { Result FAIL "T1/$label/taskfile" 'task --list failed' }
+    } else {
+      Result SKIP "T1/$label/taskfile" 'task not installed'
+    }
+
+    # self-contained roots per tier (mirror of run-all.sh); tier 04 has none:
+    # its modules live in the external registry, hcl checks cover the units
+    $roots = @()
+    if ($tier -eq '01') { $roots = @('.') }
+    elseif ($tier -eq '02') { $roots = @(Get-ChildItem (Join-Path $dest 'envs') -Directory | ForEach-Object { 'envs/' + $_.Name }) }
+    elseif ($tier -eq '03') { $roots = @('modules/baseline') }
+
+    if ($engines.Count -eq 0) {
+      Result SKIP "T1,T2/$label" 'no engine installed'
+      continue
+    }
+    if ($roots.Count -eq 0) {
+      Result SKIP "T1,T2/$label" 'no local roots (terragrunt units are bash-runner territory)'
+      continue
+    }
+
+    foreach ($engine in $engines) {
       $ok = $true
       foreach ($r in $roots) {
-        $wd = Join-Path $dest $r
-        & $engine -chdir="$wd" init -backend=false *> $null
+        & $engine -chdir="$(Join-Path $dest $r)" fmt -check -recursive *> $null
+        if ($LASTEXITCODE -ne 0) { $ok = $false }
+      }
+      if ($ok) { Result PASS "T1/$label/$engine" 'fmt -check -recursive' }
+      else { Result FAIL "T1/$label/$engine" 'fmt -check -recursive' }
+
+      $ok = $true
+      foreach ($r in $roots) {
+        & $engine -chdir="$(Join-Path $dest $r)" init -backend=false *> $null
         if ($LASTEXITCODE -ne 0) { $ok = $false; break }
-        & $engine -chdir="$wd" validate *> $null
+        & $engine -chdir="$(Join-Path $dest $r)" validate *> $null
         if ($LASTEXITCODE -ne 0) { $ok = $false; break }
       }
       if ($ok) { Result PASS "T2/$label/$engine" 'init -backend=false + validate' }
-      else { Result FAIL "T2/$label/$engine" 'validate failed' }
-    } elseif (-not $engine) {
-      Result SKIP "T2/$label" 'no engine installed'
-    } else {
-      Result SKIP "T2/$label" 'terragrunt tiers: use tests/run-all.sh'
+      else { Result FAIL "T2/$label/$engine" 'init/validate failed' }
     }
   }
 }

@@ -41,6 +41,8 @@
 ./policy/README.md
 ./policy/naming.rego
 ./policy/tags.rego
+./policy/tests/naming_test.rego
+./policy/tests/tags_test.rego
 ./runbooks/adding-an-environment.md
 ./runbooks/drift-remediation.md
 ./runbooks/state-incident.md

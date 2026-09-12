@@ -62,7 +62,9 @@ committed. Each tier ships `.env.example` listing the variables per cloud;
 
 All operations go through the tier's Taskfile (`task plan`, `task apply`, …).
 The engine binary (`tofu` default, `terraform` fallback) is resolved by
-`IAC_ENGINE` — see `docs/engine-duality.md`.
+`IAC_ENGINE` — see `docs/engine-duality.md`. The Taskfile auto-loads `.env`
+(`dotenv: ['.env']`), so the `IAC_ENGINE` line init records takes effect
+without shell exports; explicit exports still work and win.
 
 ## Verification
 

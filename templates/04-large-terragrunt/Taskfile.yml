@@ -14,12 +14,16 @@ version: "3"
 # prefer Terraform with: IAC_ENGINE=terraform task plan ...
 # -----------------------------------------------------------------------------
 
+# init writes .env (IAC_ENGINE=<engine>); it is loaded for every task, so the
+# recorded engine choice takes effect without shell exports. Missing file = no-op.
+dotenv: ['.env']
+
 env:
   TF_PLUGIN_CACHE_DIR: ./.terraform-plugin-cache
   TF_IN_AUTOMATION: "1"
 
 vars:
-  IAC_ENGINE: tofu
+  IAC_ENGINE: '{{.IAC_ENGINE | default "tofu"}}'
   PLATFORM: aws
   ENV: dev
   COMPONENT: baseline
@@ -117,6 +121,17 @@ tasks:
       #   <engine> show -json tfplan > tfplan.json && conftest test tfplan.json -p policy/
       - '{{.IAC_BIN}} show -json platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}/tfplan > platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}/tfplan.json'
       - 'conftest test platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}/tfplan.json -p policy/'
+
+  policy-verify:
+    desc: Run the policy unit tests (conftest verify - mocks, no plan needed)
+    preconditions:
+      - sh: command -v conftest >/dev/null 2>&1
+        msg: "conftest is not installed - see policy/README.md for install and wiring"
+    cmds:
+      # Compiles every policy/*.rego together with policy/tests/*_test.rego,
+      # so rule changes that break a documented behavior fail here BEFORE any
+      # real plan is rendered.
+      - 'conftest verify --policy policy/'
 
   graph:
     desc: Print the component dependency graph (DOT) for one platform/env scope

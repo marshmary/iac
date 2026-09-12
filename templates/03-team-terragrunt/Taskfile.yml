@@ -12,6 +12,10 @@ version: '3'
 #   COMPONENT unit directory under envs/<env>/    (default: baseline)
 # ---------------------------------------------------------------------------
 
+# init writes .env (IAC_ENGINE=<engine>); it is loaded for every task, so the
+# recorded engine choice takes effect without shell exports. Missing file = no-op.
+dotenv: ['.env']
+
 env:
   TF_PLUGIN_CACHE_DIR: '{{.TF_PLUGIN_CACHE_DIR | default "./.terraform-plugin-cache"}}'
   TF_IN_AUTOMATION: '1'
