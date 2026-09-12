@@ -38,6 +38,7 @@ if (-not (Test-Path $Src)) { throw "template for tier $Tier not found: $Src" }
 
 if ($Tier -ne '04') {
   if ([string]::IsNullOrEmpty($Provider)) { throw "-Provider (aws/azure/gcp) is required for tier $Tier" }
+  if ($Provider -eq 'all') { throw "-Provider must be aws, azure or gcp (tier 04 keeps all platforms)" }
 } else {
   $Provider = 'all'
 }
@@ -45,6 +46,14 @@ if ($Tier -ne '04') {
 $Dest = [System.IO.Path]::GetFullPath($Dest)
 if ((Test-Path $Dest) -and ((Get-ChildItem $Dest -Force | Measure-Object).Count -gt 0)) {
   throw "destination exists and is not empty: $Dest"
+}
+# mirror the sh version's note: warn when the project lands inside the
+# template repo itself (runner scratch under tests/ is fine)
+$repoPrefix = $RepoRoot.TrimEnd('\') + '\'
+$scratchPrefix = Join-Path $RepoRoot 'tests\scratch'
+if ($Dest.StartsWith($repoPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and
+    -not $Dest.StartsWith($scratchPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+  Write-Warning "creating project inside the template repo itself: $Dest"
 }
 
 New-Item -ItemType Directory -Path $Dest -Force | Out-Null
@@ -124,6 +133,18 @@ function Get-CloudMap([string]$cloud) {
 
 function Substitute([string]$dir, [hashtable[]]$maps) {
   foreach ($file in Get-ChildItem $dir -File -Recurse) {
+    # cheap binary guard (mirrors grep -Iq in the sh version): a NUL byte in
+    # the first chunk read means the file is not text - skip it
+    $isBinary = $false
+    $stream = [System.IO.File]::OpenRead($file.FullName)
+    try {
+      $chunk = New-Object byte[] 4096
+      $read = $stream.Read($chunk, 0, $chunk.Length)
+      for ($i = 0; $i -lt $read; $i++) {
+        if ($chunk[$i] -eq 0) { $isBinary = $true; break }
+      }
+    } finally { $stream.Dispose() }
+    if ($isBinary) { continue }
     $content = [System.IO.File]::ReadAllText($file.FullName)
     $updated = $content
     foreach ($map in $maps) {
@@ -164,6 +185,7 @@ if (-not $AllowTokens) {
 [System.IO.File]::WriteAllText((Join-Path $Dest '.env'), "# local preferences (gitignored)`nIAC_ENGINE=$Engine`n")
 if (-not $NoGit -and -not (Test-Path (Join-Path $Dest '.git'))) {
   git -C $Dest init -q
+  if ($LASTEXITCODE -ne 0) { throw "git init failed in $Dest (exit $LASTEXITCODE)" }
 }
 
 # --- next steps -----------------------------------------------------------------------

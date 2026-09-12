@@ -8,7 +8,7 @@ resources are deliberately NOT managed in-tree - they bootstrap the bootstrap.
 ## 0. Authenticate
 
 ```bash
-aws login                     # or: aws sso login / aws configure
+aws sso login                 # or: aws configure for static keys
 aws sts get-caller-identity   # confirm the identity you expect
 ```
 

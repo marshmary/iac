@@ -36,7 +36,7 @@ the scheme above.
 ```
 platforms/aws/
 ├── root.hcl          # shared locals + generated backend/provider
-├── bootstrap.md      # one-pager: create the state bucket + lock table, first run
+├── bootstrap.md      # one-pager: create the state bucket (S3-native locking, no lock table), first run
 └── envs/
     ├── dev/
     │   ├── env.hcl               # env = "dev", tier = "nonprod"

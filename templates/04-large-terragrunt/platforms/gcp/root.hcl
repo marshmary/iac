@@ -40,17 +40,21 @@ locals {
 
   # Tag policy definition - single source of truth: common/tags.hcl.
   # policy/tags.rego enforces exactly these keys at plan time (GCP resources
-  # carry them in their `labels` map).
+  # carry them in their `labels` map). GCP label KEYS must be lowercase -
+  # lowercase them where common_tags flows into labels (values pass through).
   tags_config    = read_terragrunt_config(find_in_parent_folders("common/tags.hcl"))
   mandatory_tags = local.tags_config.locals.mandatory_tags
 
+  # Env context on top of the mandatory set. The GCP project id sits under its
+  # own key (mirroring Account on AWS): merge() is later-wins, so reusing the
+  # Project key here would silently overwrite the registry's mandatory value.
   common_tags = merge(
     local.mandatory_tags,
     {
       Platform    = local.platform
       Environment = local.env
       Tier        = local.tier
-      Project     = local.project_id
+      GcpProject  = local.project_id
     },
   )
 }

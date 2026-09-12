@@ -1,13 +1,15 @@
 <#
 .SYNOPSIS
-  PowerShell mirror of tests/run-all.sh — the no-cloud test pyramid (docs/testing.md).
+  PowerShell companion of tests/run-all.sh — the no-cloud test pyramid (docs/testing.md).
 
 .DESCRIPTION
   Runs T0 (init + golden manifest + token sweep) for every tier x provider.
-  If tofu or terraform is on PATH, also runs T1/T2 (fmt-check, init
-  -backend=false, validate) for the plain tiers (01, 02). Terragrunt tiers
-  03/04 and T3-T6 are covered by the bash runner; this mirror keeps the
-  structural gate available in a pure-Windows shell.
+  If tofu or terraform is on PATH, also runs T2 (init -backend=false +
+  validate) for the plain tiers (01, 02) with that single engine. No T1
+  fmt-check yet; terragrunt tiers 03/04 and T1/T3-T6 stay bash-runner
+  territory (tests/run-all.sh / tests/run-in-docker.sh) until full parity
+  lands. This companion keeps the structural gate available in a
+  pure-Windows shell.
 #>
 [CmdletBinding()]
 param(
@@ -56,7 +58,8 @@ foreach ($tier in $Tiers) {
       # normalize to the bash runner's "./forward/slash" manifest format
       $actual = Get-ChildItem $dest -File -Recurse | ForEach-Object { ('./' + $_.FullName.Substring($dest.Length + 1)) -replace '\\', '/' } | Sort-Object
       $expected = Get-Content $manifest
-      $diff = Compare-Object $expected $actual
+      # -CaseSensitive: file names are case-sensitive in the bash manifests
+      $diff = Compare-Object $expected $actual -CaseSensitive
       if ($diff) { Result FAIL "T0/$label" 'golden manifest drift (regen: tests/gen-manifests.sh)' }
       else { Result PASS "T0/$label" 'golden manifest match' }
     } else {

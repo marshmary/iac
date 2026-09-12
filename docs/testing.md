@@ -31,7 +31,10 @@ TIERS="01 03" tests/run-all.sh    # subset
 tests/gen-manifests.sh            # regenerate golden trees after deliberate structure change
 ```
 
-PowerShell users: `tests/run-all.ps1` mirrors T0–T2.
+PowerShell users: `tests/run-all.ps1` runs T0 for every tier and, when an
+engine is installed, T2 for tiers 01–02 with a single engine. The rest of the
+pyramid (T1, T2 on terragrunt tiers, T3–T6) is bash-runner territory until
+full ps1 parity lands.
 
 ## Full matrix in a container (zero host installs)
 

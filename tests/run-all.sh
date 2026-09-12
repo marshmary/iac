@@ -145,7 +145,7 @@ engine_loop() { # $1 tier, $2 provider, $3 dest — runs T1..T5 per available en
       04) local pc ok=1
            for pc in aws azure gcp; do
              [ -d "$dest/platforms/$pc" ] || continue
-             ( cd "$dest" && terragrunt hcl fmt --check >/dev/null 2>&1 ) || ok=0
+             ( cd "$dest/platforms/$pc" && terragrunt hcl fmt --check >/dev/null 2>&1 ) || ok=0
            done
            [ "$ok" = 1 ] && result PASS "T1/all-terragrunt" "hcl fmt --check (all platforms)" \
                           || result FAIL "T1/all-terragrunt" "hcl fmt failed" ;;

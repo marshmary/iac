@@ -29,10 +29,11 @@ project_name = "__PROJECT_NAME__"
 # common/accounts.hcl.
 environments = {"dev", "prod"}
 
-# Resource types checked, mapped to the attribute holding the name.
+# Resource types checked, mapped to the attribute holding the name
+# ("bucket" for aws_s3_bucket - not "name").
 # Extend this map first when adding coverage; the two rules below are generic.
 named_resources = {
-  "aws_s3_bucket": "name",
+  "aws_s3_bucket": "bucket",
   "azurerm_resource_group": "name",
   "google_storage_bucket": "name",
 }

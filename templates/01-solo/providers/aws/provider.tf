@@ -24,7 +24,7 @@ provider "aws" {
   # dry_run=true lets `task plan-dry` plan OFFLINE with fake credentials:
   #   AWS_ACCESS_KEY_ID=fake AWS_SECRET_ACCESS_KEY=fake task plan-dry
   # These flags skip the startup API calls that would otherwise fail without
-  # real credentials. Defaults to false (see variables.tf) so real plans and
+  # real credentials. Defaults to false (see dry_run.tf) so real plans and
   # applies still validate credentials and account access instead of hiding
   # breakage.
   skip_credentials_validation = var.dry_run

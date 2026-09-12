@@ -2,7 +2,7 @@
 
 Plain Terraform/OpenTofu for one person running 1-2 environments (dev/prod)
 from a single root module. Engine-swappable: set `IAC_ENGINE=tofu` or
-`IAC_ENGINE=terraform` — the code uses nothing beyond Terraform >= 1.6 /
+`IAC_ENGINE=terraform` — the code uses nothing beyond Terraform >= 1.11.0 /
 OpenTofu parity.
 
 ## Layout
@@ -12,9 +12,10 @@ OpenTofu parity.
 ├── backend.tf        # remote state (merged in from providers/<cloud>/)
 ├── provider.tf       # cloud provider config (merged; exactly one cloud)
 ├── starter.tf        # example resource (merged; replace me)
+├── dry_run.tf        # AWS-only offline-plan switch (merged; azure/gcp omit it)
 ├── versions.tf       # engine constraint only
 ├── main.tf           # naming/tag conventions + terraform_data placeholder
-├── variables.tf      # project / environment / dry_run
+├── variables.tf      # project / environment
 ├── outputs.tf        # conventions + starter_instructions
 ├── dev.tfvars        # dev environment values
 ├── prod.tfvars       # prod environment values

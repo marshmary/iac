@@ -3,19 +3,20 @@
 Guidance for AI coding agents (and humans) working IN this generated project.
 Tier: 01-solo — plain Terraform/OpenTofu, one person, 1-2 environments, a
 single root module. Engine-swap-compatible: nothing here goes beyond what
-Terraform >= 1.6 and OpenTofu both support.
+Terraform >= 1.11.0 and OpenTofu both support.
 
 ## Project map
 
 | Path | What it is |
 | ---- | ---------- |
-| `versions.tf` | Engine version constraint only (>= 1.6, < 2.0). |
+| `versions.tf` | Engine version constraint only (>= 1.11.0, < 2.0.0). |
 | `main.tf` | Naming/tagging `locals` + the `terraform_data.conventions` placeholder to replace with real resources. |
-| `variables.tf` | `project` (required, kebab-case, no default), `environment` (default `dev`), `dry_run` (AWS offline-plan switch). |
+| `variables.tf` | `project` (required, kebab-case, no default), `environment` (default `dev`). |
 | `outputs.tf` | `conventions` (rendered name prefix) and `starter_instructions`. |
 | `backend.tf` | Merged in at instantiation from `providers/<cloud>/backend.tf`. Remote state config. |
 | `provider.tf` | Merged in from `providers/<cloud>/provider.tf`. Cloud provider + auth mode. Exactly one cloud exists here. |
 | `starter.tf` | Merged in from `providers/<cloud>/starter.tf`. Example resource; delete once real resources exist. |
+| `dry_run.tf` | Merged in from `providers/aws/dry_run.tf` (AWS only). `dry_run` offline-plan switch; absent on azure/gcp. |
 | `dev.tfvars` / `prod.tfvars` | Per-environment values (`project`, `environment`). |
 | `bootstrap/` | Run-once CLI notes for how the state backend was created (aws/azure/gcp). |
 | `tests/outputs.tftest.hcl` | Native `tofu test` suite; needs no cloud credentials. |

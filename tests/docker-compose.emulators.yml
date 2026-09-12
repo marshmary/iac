@@ -10,7 +10,10 @@
 # resource-group applies). GCP has no free emulator — use T2-T4 there.
 services:
   localstack:
-    image: localstack/localstack:latest
+    # Pin the community/OSS image: the plain `latest` tag now pulls the Pro
+    # edition, which exits with "License activation failed" unless a
+    # LOCALSTACK_AUTH_TOKEN is set. `:4` is the OSS release line and needs none.
+    image: localstack/localstack:4
     container_name: iac-localstack
     environment:
       - SERVICES=s3,dynamodb,sts,iam
@@ -21,7 +24,9 @@ services:
       - localstack-data:/var/lib/localstack
 
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:latest
+    # Pinned to a stable release tag (same line MCR tags as `latest`); `latest`
+    # would drift independently of the localstack pin above.
+    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
     container_name: iac-azurite
     ports:
       - "10000:10000"        # blob; ARM_* endpoints via AZURE_STORAGE_HOST

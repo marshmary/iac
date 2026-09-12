@@ -30,7 +30,7 @@ generated project; agents and humans both follow them.
   per tier layout — one state per env root (tier 02) or per component
   (tiers 03–04).
 - Terraform **workspaces are forbidden** — an environment is a directory, not
-  a workspace. Directories diff well; workbooks hide drift.
+  a workspace. Directories diff well; workspaces hide drift.
 - `.terraform.lock.hcl` is committed. State files never are.
 - Bootstrap the backend before the first real `init` (each tier's
   `bootstrap/<cloud>.md` is a copy-paste one-pager).

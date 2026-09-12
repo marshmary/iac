@@ -30,10 +30,13 @@ that no CI pipeline is mid-apply.
 ### AWS (S3-native lock)
 
 Locking uses a `.tflock` object next to the state object
-(`<key>.tflock`). Prefer the engine's own unlock when it reports a lock ID:
+(`<key>.tflock`). Prefer the engine's own unlock when it reports a lock ID.
+`--tf-path` must resolve to the same engine the Taskfile uses - `IAC_ENGINE`
+(default `tofu`) selects it (docs/engine-duality.md):
 
 ```sh
-cd platforms/aws/envs/dev/baseline && terragrunt force-unlock <LOCK_ID> --tf-path tofu
+cd platforms/aws/envs/dev/baseline && \
+  terragrunt force-unlock <LOCK_ID> --tf-path "${IAC_ENGINE:-tofu}"
 ```
 
 If the lock object is stale (no live run holds it), delete it manually:
@@ -69,7 +72,7 @@ resolves:
 ```sh
 task engine-check   # shows the binary tasks use; use the same one below
 
-terragrunt import --tf-path tofu \
+terragrunt import --tf-path "${IAC_ENGINE:-tofu}" \
   --working-dir platforms/aws/envs/dev/baseline \
   aws_s3_bucket.imported_example my-imported-bucket-name
 ```
