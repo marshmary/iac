@@ -70,6 +70,16 @@ repo (`chore:` or a repo-wide `feat:`).
    `tests/run-in-docker.sh` (or `tests/run-all.sh` when CLIs exist). Run the
    subset your change touches.
 
+## Releases
+
+Tags are cut directly on green `main` (trunk-based — no release branches)
+following the checklist in `docs/release-process.md`: semver where a breaking
+change to generated output — or a tofu/terraform/terragrunt major that breaks
+generated configs — is a MAJOR, and every release attaches a `checksums.txt`
+(the one-liner installer verifies it; see
+`docs/adr/0001-one-liner-installer.md`). Tagging and publishing are owner
+actions: agents never tag or push releases.
+
 ## Commit message for AI agents
 
 When an agent is asked to "commit this", it must: inspect `git status`,
