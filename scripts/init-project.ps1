@@ -39,7 +39,18 @@ $Src = Join-Path $RepoRoot ("templates/" + $TierMap[$Tier])
 if (-not (Test-Path $Src)) { throw "template for tier $Tier not found: $Src" }
 
 if ($Tier -ne '04') {
-  if ([string]::IsNullOrEmpty($Provider)) { throw "-Provider (aws/azure/gcp) is required for tier $Tier" }
+  if ([string]::IsNullOrEmpty($Provider)) {
+    if ([Console]::IsInputRedirected) {
+      throw "-Provider (aws/azure/gcp) is required for tier $Tier"
+    }
+    # Interactive first-run: PowerShell already prompted for the mandatory
+    # -Tier/-Name/-Dest params; complete the chooser with the provider.
+    while ($true) {
+      $Provider = Read-Host "provider (aws/azure/gcp)"
+      if ($Provider -eq 'aws' -or $Provider -eq 'azure' -or $Provider -eq 'gcp') { break }
+      Write-Host "  must be aws, azure or gcp"
+    }
+  }
   if ($Provider -eq 'all') { throw "-Provider must be aws, azure or gcp (tier 04 keeps all platforms)" }
 } else {
   $Provider = 'all'
@@ -126,8 +137,8 @@ function Get-CloudMap([string]$cloud) {
   $r = if ($Region) { $Region } else { $regionByCloud[$cloud] }
   $m = @{ '__REGION__' = $r }
   switch ($cloud) {
-    'aws'   { $m['__STATE_BUCKET__'] = "$Name-tfstate"; $m['__AWS_ACCOUNT_ID__'] = '000000000000' }
-    'azure' { $m['__STATE_RESOURCE_GROUP__'] = "$Name-tfstate-rg"; $m['__STATE_STORAGE_ACCOUNT__'] = $azureSa; $m['__STATE_CONTAINER__'] = 'tfstate'; $m['__AZURE_SUBSCRIPTION_ID__'] = '00000000-0000-0000-0000-000000000000' }
+    'aws'   { $m['__STATE_BUCKET__'] = "$Name-tfstate" }
+    'azure' { $m['__STATE_RESOURCE_GROUP__'] = "$Name-tfstate-rg"; $m['__STATE_STORAGE_ACCOUNT__'] = $azureSa; $m['__STATE_CONTAINER__'] = 'tfstate' }
     'gcp'   { $m['__STATE_BUCKET__'] = "$Name-tfstate"; $m['__GCP_PROJECT__'] = "$Name-project" }
   }
   return $m
@@ -157,9 +168,13 @@ function Substitute([string]$dir, [hashtable[]]$maps) {
 }
 
 $globalMap = @{ '__PROJECT_NAME__' = $Name }
+# Per-env tokens: dev and prod can differ; the distinct zero-defaults force a
+# conscious replacement before any real use.
 $registryMap = @{
-  '__AWS_ACCOUNT_ID__' = '000000000000'
-  '__AZURE_SUBSCRIPTION_ID__' = '00000000-0000-0000-0000-000000000000'
+  '__AWS_ACCOUNT_ID_DEV__' = '000000000000'
+  '__AWS_ACCOUNT_ID_PROD__' = '000000000001'
+  '__AZURE_SUBSCRIPTION_ID_DEV__' = '00000000-0000-0000-0000-000000000000'
+  '__AZURE_SUBSCRIPTION_ID_PROD__' = '00000000-0000-0000-0000-000000000001'
   '__GCP_PROJECT__' = "$Name-project"
 }
 if ($Tier -eq '04') {

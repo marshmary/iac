@@ -42,10 +42,12 @@ playground/down.sh          # stop + remove emulators (projects/ left for inspec
 | 01 | LocalStack | `aws_s3_bucket` starter + S3 backend (native locking) |
 | 02 | LocalStack | `aws_s3_bucket` starter (per env) + backend |
 | 03 | LocalStack (backend only) | `baseline` component is `terraform_data` (provider-free), applies offline; remote state via LocalStack |
-| 04 | LocalStack (backend only) | `baseline` component provider-free; registry modules (`git::`) are placeholders until replaced |
+| 04 | LocalStack (backend only) | `baseline` component provider-free, sourced from the vendored `modules-local/baseline` |
 
-GCP has no free emulator (use offline `validate`/`dry-run`). Azurite emulates
-Azure storage only (enough for the `azurerm` backend, not resource groups).
+GCP has no free emulator (use offline `validate`/`dry-run`). Azurite is
+booted by `compose.yml` but **not wired yet** - nothing points Azure projects
+at it (`localize.sh` is AWS-only), so it is future work, clearly marked in
+`compose.yml`. Azure tiers run offline `validate` in the playground today.
 
 ## Two LocalStack gotchas (already handled for you)
 

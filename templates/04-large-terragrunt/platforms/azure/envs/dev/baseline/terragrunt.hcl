@@ -8,40 +8,25 @@ include "root" {
   expose = true
 }
 
-###############################################################################
-#                                                                             #
-#  MODULE SOURCE PLACEHOLDER - READ BEFORE YOUR FIRST PLAN                    #
-#                                                                             #
-#  Modules are NOT vendored in this repository. They live in a separate       #
-#  module registry repo, pinned by tag. Replace the placeholder URL below    #
-#  with YOUR registry:                                                        #
-#                                                                             #
-#    git::https://github.com/__PROJECT_NAME__/iac-modules.git//baseline?ref=v0.0.0 #
-#                                                                             #
-#  Rules:                                                                     #
-#    - always pin ?ref=vX.Y.Z (a tag), never a branch;                        #
-#    - bump the pin via PR so reviewers see module changes;                   #
-#    - local escape hatch if you choose to vendor instead:                    #
-#                                                                             #
-#      source = "${find_in_parent_folders("root.hcl")}/../../../modules-local/baseline" #
-#                                                                             #
-#      (resolves to <repo-root>/modules-local/baseline - create that tree     #
-#      and git-ignore nothing in it; it becomes reviewed code like any other) #
-#                                                                             #
-###############################################################################
-
+# DEFAULT: the vendored provider-free baseline - plans offline, no registry
+# needed (see modules-local/baseline/README.md). Swap to your registry once
+# the iac-modules repo exists - pin a tag, never a branch, and bump the pin
+# via PR so reviewers see module changes:
 terraform {
-  source = "git::https://github.com/__PROJECT_NAME__/iac-modules.git//baseline?ref=v0.0.0"
+  source = "${find_in_parent_folders("root.hcl")}/../../../modules-local/baseline"
+
+  # source = "git::https://github.com/__PROJECT_NAME__/iac-modules.git//baseline?ref=v0.0.0"
 }
 
 inputs = {
-  # Naming: <project>-<env>-... - matches policy/naming.rego expectations.
-  name_prefix = "${include.root.locals.project}-${include.root.locals.env}"
+  project     = include.root.locals.project
+  environment = include.root.locals.env
 
-  # Tags: mandatory set (common/tags.hcl) + env context, merged in root.hcl.
-  common_tags = include.root.locals.common_tags
+  # Mandatory set (common/tags.hcl) + env context, merged in root.hcl.
+  tags = include.root.locals.common_tags
 
-  # Cloud identity from the registries - components never hardcode these.
-  subscription_id = include.root.locals.subscription_id
-  location        = include.root.locals.location
+  # Real components consume the registries the same way - declare matching
+  # variables in your module, e.g.:
+  # subscription_id = include.root.locals.subscription_id
+  # location        = include.root.locals.location
 }

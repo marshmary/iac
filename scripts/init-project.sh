@@ -37,6 +37,48 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Interactive first-run chooser: fills required flags not given on the
+# command line (tier -> provider -> engine -> name -> dest). Only engages on
+# a TTY; piped/CI callers keep the plain usage error, so scripted behavior
+# is unchanged.
+if [ -z "$TIER" ] || [ -z "$NAME" ] || [ -z "$DEST" ]; then
+  [ -t 0 ] || usage
+  while :; do
+    printf 'tier (01 solo / 02 small team / 03 team-terragrunt / 04 large-terragrunt): '
+    IFS= read -r TIER
+    case "$TIER" in 01|02|03|04) break ;; esac
+    echo "  must be 01, 02, 03 or 04" >&2
+  done
+  if [ "$TIER" != "04" ] && [ -z "$PROVIDER" ]; then
+    while :; do
+      printf 'provider (aws/azure/gcp): '
+      IFS= read -r PROVIDER
+      case "$PROVIDER" in aws|azure|gcp) break ;; esac
+      echo "  must be aws, azure or gcp" >&2
+    done
+  fi
+  while :; do
+    printf 'engine [tofu|terraform] (tofu): '
+    IFS= read -r _engine_in
+    [ -z "$_engine_in" ] && _engine_in="tofu"
+    case "$_engine_in" in tofu|terraform) break ;; esac
+    echo "  must be tofu or terraform" >&2
+  done
+  ENGINE="$_engine_in"
+  while :; do
+    printf 'project name (kebab-case slug): '
+    IFS= read -r NAME
+    [ -n "$NAME" ] || { echo "  must not be empty" >&2; continue; }
+    printf '%s' "$NAME" | grep -Eq '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$' && break
+    echo "  must be kebab-case (a-z, 0-9, -), 1-63 chars, no leading/trailing hyphen" >&2
+  done
+  while [ -z "$DEST" ]; do
+    printf 'destination directory: '
+    IFS= read -r DEST
+    [ -z "$DEST" ] && echo "  must not be empty" >&2
+  done
+fi
+
 [ -n "$TIER" ] && [ -n "$NAME" ] && [ -n "$DEST" ] || usage
 case "$TIER" in 01|02|03|04) ;; *) echo "error: -t must be 01, 02, 03 or 04" >&2; exit 1 ;; esac
 case "$ENGINE" in tofu|terraform) ;; *) echo "error: -e must be tofu or terraform" >&2; exit 1 ;; esac
@@ -131,8 +173,8 @@ map_for() { # $1 = cloud -> prints sed s/// expressions
   local c="$1"
   echo "-e s|__REGION__|$(cloud_region "$c")|g"
   case "$c" in
-    aws)   echo "-e s|__STATE_BUCKET__|$NAME-tfstate|g" "-e s|__AWS_ACCOUNT_ID__|000000000000|g" ;;
-    azure) echo "-e s|__STATE_RESOURCE_GROUP__|$NAME-tfstate-rg|g" "-e s|__STATE_STORAGE_ACCOUNT__|$azure_sa|g" "-e s|__STATE_CONTAINER__|tfstate|g" "-e s|__AZURE_SUBSCRIPTION_ID__|00000000-0000-0000-0000-000000000000|g" ;;
+    aws)   echo "-e s|__STATE_BUCKET__|$NAME-tfstate|g" ;;
+    azure) echo "-e s|__STATE_RESOURCE_GROUP__|$NAME-tfstate-rg|g" "-e s|__STATE_STORAGE_ACCOUNT__|$azure_sa|g" "-e s|__STATE_CONTAINER__|tfstate|g" ;;
     gcp)   echo "-e s|__STATE_BUCKET__|$NAME-tfstate|g" "-e s|__GCP_PROJECT__|$NAME-project|g" ;;
   esac
 }
@@ -152,10 +194,14 @@ for kv in "${global_map[@]}"; do global_sed+=( "-e" "s|${kv%%=*}|${kv#*=}|g" ); 
 if [ "$TIER" = "04" ]; then
   # Global + cross-cloud registry tokens everywhere (accounts.hcl lives outside
   # platforms/); then per-cloud tokens under platforms/<cloud>/ only, where the
-  # cloud-specific __REGION__ value is unambiguous.
+  # cloud-specific __REGION__ value is unambiguous. Account/subscription
+  # tokens are per-env so dev and prod can differ; the distinct zero-defaults
+  # force a conscious replacement before any real use.
   registry_sed=(
-    -e "s|__AWS_ACCOUNT_ID__|000000000000|g"
-    -e "s|__AZURE_SUBSCRIPTION_ID__|00000000-0000-0000-0000-000000000000|g"
+    -e "s|__AWS_ACCOUNT_ID_DEV__|000000000000|g"
+    -e "s|__AWS_ACCOUNT_ID_PROD__|000000000001|g"
+    -e "s|__AZURE_SUBSCRIPTION_ID_DEV__|00000000-0000-0000-0000-000000000000|g"
+    -e "s|__AZURE_SUBSCRIPTION_ID_PROD__|00000000-0000-0000-0000-000000000001|g"
     -e "s|__GCP_PROJECT__|$NAME-project|g"
   )
   substitute "$DEST" "${global_sed[@]}" "${registry_sed[@]}"

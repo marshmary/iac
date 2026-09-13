@@ -46,7 +46,7 @@ engine_loop() { # $1 tier, $2 provider, $3 dest — runs T1..T5 per available en
     01) roots="." ;;
     02) for d in "$dest"/envs/*/; do [ -d "$d" ] && roots="$roots ${d#"$dest"/}"; done ;;
     03) roots="modules/baseline" ;;
-    04) roots="" ;; # modules live in the external registry; hcl-validate covers units
+    04) roots="modules-local/baseline" ;; # vendored provider-free module
   esac
 
   for eng in tofu terraform; do
@@ -109,6 +109,7 @@ engine_loop() { # $1 tier, $2 provider, $3 dest — runs T1..T5 per available en
       local tdir=""
       [ -d "$dest/tests" ] && tdir="."
       [ -d "$dest/modules/baseline/tests" ] && tdir="modules/baseline"
+      [ -d "$dest/modules-local/baseline/tests" ] && tdir="modules-local/baseline"
       if [ -n "$tdir" ]; then
         local t4pass=""
         if "$bin" -chdir="$dest/$tdir" test >/dev/null 2>&1; then

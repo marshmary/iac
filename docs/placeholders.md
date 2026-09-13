@@ -16,8 +16,8 @@ substitutes them at instantiation and then **fails if any survive**
 | `__STATE_CONTAINER__` | azure backend | `tfstate` |
 | `__GCP_PROJECT__` | gcp provider | `<name>-project` — **always replace with your real project id** |
 | `__ENV__` | tier 02 merged files | each env dir name (`dev`, `staging`, `prod`) |
-| `__AWS_ACCOUNT_ID__` | tier 04 `common/accounts.hcl` | `000000000000` — replace with real account ids |
-| `__AZURE_SUBSCRIPTION_ID__` | tier 04 `common/accounts.hcl` | all-zero GUID — replace with real subscription ids |
+| `__AWS_ACCOUNT_ID_DEV__` / `__AWS_ACCOUNT_ID_PROD__` | tier 04 `common/accounts.hcl` | `000000000000` / `000000000001` — replace with the real account ids (dev and prod can differ) |
+| `__AZURE_SUBSCRIPTION_ID_DEV__` / `__AZURE_SUBSCRIPTION_ID_PROD__` | tier 04 `common/accounts.hcl` | all-zero GUID / `…0001` GUID — replace with the real subscription ids |
 
 ## Rules for template maintainers
 

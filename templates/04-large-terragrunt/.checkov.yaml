@@ -1,10 +1,9 @@
 # checkov configuration - IaC security scanning (https://www.checkov.io).
 # Wired into: the `checkov` pre-commit hook and the catalog's run-all T1.
 #
-# Today this repo vendors no .tf modules (they come from the iac-modules
-# registry), so a repo-root scan has nothing to chew on - the config ships
-# anyway so it is active the moment real modules are vendored. Scan a
-# registry checkout with: checkov -d <modules-checkout>
+# The vendored modules under modules-local/ are scanned here; registry
+# modules are pinned and validated in their own repo. Scan a registry
+# checkout with: checkov -d <modules-checkout>
 quiet: true
 compact: true
 framework:

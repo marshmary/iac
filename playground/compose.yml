@@ -5,10 +5,11 @@
 # Coverage notes (mirror docs/testing.md):
 #   - localstack  -> AWS: S3 (the s3 backend with native locking) and the
 #                    aws_s3_bucket starter in tiers 01/02. Point AWS_ENDPOINT_URL
-#                    at localhost:4566.
-#   - azurite     -> Azure storage only (sufficient for the azurerm backend, not
-#                    for resource-group applies). GCP has no free emulator; use
-#                    offline plan/validate there.
+#                    at localhost:4566. localize.sh wires the projects to it.
+#   - azurite     -> FUTURE WORK: booted but not wired yet - nothing points
+#                    Azure projects at it (localize.sh is AWS-only). Azure
+#                    tiers run offline plan/validate in the playground today.
+#   - gcp         -> no free emulator; offline plan/validate only.
 services:
   localstack:
     # Pin the community/OSS image: the plain `latest` tag now pulls the Pro
@@ -25,7 +26,13 @@ services:
       - localstack-data:/var/lib/localstack
 
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:latest
+    # Pinned to a stable release tag (same line MCR tags as `latest`).
+    # STATUS: future work - NOTHING localizes Azure projects to this emulator
+    # yet (playground/localize.sh is AWS-only), so azurite is booted but
+    # unused today. Wiring it means patching azurerm backend + provider with
+    # the Azurite endpoints (blob 10000) plus ARM_* fake credentials; until
+    # then Azure tiers run offline plan/validate only.
+    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
     container_name: iac-playground-azurite
     ports:
       - "10000:10000"        # blob endpoint for the azurerm backend

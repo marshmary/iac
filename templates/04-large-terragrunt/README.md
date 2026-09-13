@@ -41,9 +41,8 @@ the path doubles as the state key scheme
 1. Pick your platform and bootstrap its state backend once:
    `platforms/aws/bootstrap.md` (or azure / gcp).
 2. `task engine-check` - confirm terragrunt + engine (+ note on conftest).
-3. `task hcl-validate PLATFORM=aws ENV=dev COMPONENT=baseline` - needs a real
-   module source first: point `terraform.source` at your registry or the
-   local escape hatch (next section).
+3. `task check` - offline gates pass out of the box: components default to the
+   vendored `modules-local/baseline` module, so no registry is needed yet.
 4. `task plan PLATFORM=aws ENV=dev COMPONENT=baseline` - writes `tfplan`
    next to the component.
 5. Read the plan. Really read it.
@@ -53,24 +52,24 @@ the path doubles as the state key scheme
 
 Repeat per platform/env with the same task names - only the variables change.
 
-## Module registry convention (docs placeholder)
+## Module source convention
 
-Modules are NOT vendored in this repository. They live in a separate module
-registry repo, referenced by every component's `terraform.source`:
+Components start from the vendored provider-free baseline
+(`modules-local/baseline`), so `task plan` works before any registry exists.
+The intended endgame is a separate module registry repo referenced by every
+component's `terraform.source`:
 
 ```
 git::https://github.com/__PROJECT_NAME__/iac-modules.git//baseline?ref=v0.0.0
 ```
 
-- That URL is a PLACEHOLDER - replace `__PROJECT_NAME__/iac-modules` with
-  your registry location before your first plan (a BIG header comment in each
-  component repeats this).
+- The registry URL is a PLACEHOLDER - replace `__PROJECT_NAME__/iac-modules`
+  with your registry location when you create it (each component's
+  `terragrunt.hcl` carries both forms: local default, registry commented).
 - Pin every module to a tag: `?ref=vX.Y.Z`, never a branch. Bump pins via PR
   so module changes are reviewed like any other code change.
-- Local escape hatch: if you choose to vendor modules instead, each component
-  header documents the pattern
-  `source = "${find_in_parent_folders("root.hcl")}/../../../modules-local/baseline"`,
-  which resolves to `<repo-root>/modules-local/baseline`.
+- Staying vendored is fine too: treat `modules-local/*` as reviewed code
+  (PRs, tests, committed). Grow real modules beside the baseline.
 - `docs/conventions.md` (copied in by init) will carry the long-form version
   of this convention; this section is the placeholder note until then.
 
@@ -100,8 +99,8 @@ extension guide: `policy/README.md`. The developer flow is always
   resources land.
 - `task policy-check` runs conftest locally against a saved `tfplan.json` -
   no cloud access needed beyond the plan itself.
-- Until modules exist in a registry, even plan-level testing can point at
-  `modules-local/` via the escape hatch above.
+- `task test` runs the vendored baseline module's native tests (OpenTofu
+  only) - fully offline, no registry needed.
 
 ## Runbooks index
 

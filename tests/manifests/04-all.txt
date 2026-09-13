@@ -18,6 +18,13 @@
 ./docs/migrations/01-to-02.md
 ./docs/migrations/02-to-03.md
 ./docs/migrations/03-to-04.md
+./modules-local/baseline/README.md
+./modules-local/baseline/examples/basic/main.tf
+./modules-local/baseline/main.tf
+./modules-local/baseline/outputs.tf
+./modules-local/baseline/tests/baseline.tftest.hcl
+./modules-local/baseline/variables.tf
+./modules-local/baseline/versions.tf
 ./platforms/aws/README.md
 ./platforms/aws/bootstrap.md
 ./platforms/aws/envs/dev/baseline/terragrunt.hcl

@@ -164,11 +164,10 @@ tasks:
       - '{{.TG_BIN}} destroy {{.TG_ARGS}} --working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}}'
 
   test:
-    desc: Run module tests (OpenTofu-only; modules live in the registry repo, not here)
+    desc: Run the vendored baseline module tests (OpenTofu-only; offline)
     preconditions:
       - sh: '[ "{{.IAC_BIN}}" = "tofu" ]'
         msg: "task test is OpenTofu-only (tofu test) - resolved engine is {{.IAC_BIN}}"
     cmds:
-      - echo "Modules are NOT vendored in this repo - the baseline module lives in the registry:"
-      - echo "  git::https://github.com/__PROJECT_NAME__/iac-modules.git//baseline?ref=v0.0.0 (placeholder - see README)"
-      - echo "Run \`tofu test\` from a checkout of that registry once it exists, and wire the path here."
+      # modules-local/baseline is provider-free: tests run fully offline.
+      - '{{.IAC_BIN}} -chdir=modules-local/baseline test'

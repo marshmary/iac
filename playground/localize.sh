@@ -26,9 +26,13 @@ proj="${1:?project dir}"; tier="${2:?tier}"; endpoint="${3:-http://localhost:456
 
 # patch_s3_backend <file>: insert LocalStack backend args inside the s3
 # backend block, right after the use_lockfile line (before its closing brace).
+# Idempotent: an already-localized file keeps its use_path_style line and is
+# skipped, so re-running up.sh (or a standalone double-call) never injects
+# the block twice.
 patch_s3_backend() {
   local f="$1" tmp
   [ -f "$f" ] || return 0
+  grep -qF "use_path_style" "$f" && return 0
   tmp="$(mktemp)"
   awk -v ins="    endpoint                    = \"$endpoint\"\n    use_path_style              = true\n    skip_credentials_validation = true\n    skip_requesting_account_id  = true\n    skip_metadata_api_check     = true" '
     /use_lockfile/ { print; print ins; next }
@@ -38,10 +42,11 @@ patch_s3_backend() {
 }
 
 # patch_provider <file>: add s3_use_path_style after the skip_metadata_api_check
-# line (present in every tiers 01/02 provider block).
+# line (present in every tiers 01/02 provider block). Idempotent like above.
 patch_provider() {
   local f="$1" tmp
   [ -f "$f" ] || return 0
+  grep -qF "s3_use_path_style" "$f" && return 0
   tmp="$(mktemp)"
   awk '
     /skip_metadata_api_check/ { print; print "  s3_use_path_style           = true"; next }
@@ -73,6 +78,7 @@ case "$tier" in
     fi
     for h in "${hcl_files[@]}"; do
       [ -f "$h" ] || continue
+      grep -qF "use_path_style" "$h" && continue # already localized
       tmp="$(mktemp)"
       awk -v ins="        endpoint                    = \"$endpoint\"\n        use_path_style              = true\n        skip_credentials_validation = true\n        skip_requesting_account_id  = true\n        skip_metadata_api_check     = true" '
         /use_lockfile/ { print; print ins; next }

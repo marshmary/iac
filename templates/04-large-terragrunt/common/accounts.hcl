@@ -14,16 +14,18 @@
 # -----------------------------------------------------------------------------
 
 locals {
-  # AWS account IDs, keyed by environment (12-digit numeric IDs).
+  # AWS account IDs, keyed by environment (12-digit numeric IDs). Per-env
+  # tokens so dev and prod can differ; the distinct zero-defaults force a
+  # conscious replacement instead of a silent same-account dev/prod.
   aws_accounts = {
-    dev  = "__AWS_ACCOUNT_ID__"
-    prod = "__AWS_ACCOUNT_ID__"
+    dev  = "__AWS_ACCOUNT_ID_DEV__"
+    prod = "__AWS_ACCOUNT_ID_PROD__"
   }
 
   # Azure subscription GUIDs, keyed by environment.
   azure_subscriptions = {
-    dev  = "__AZURE_SUBSCRIPTION_ID__"
-    prod = "__AZURE_SUBSCRIPTION_ID__"
+    dev  = "__AZURE_SUBSCRIPTION_ID_DEV__"
+    prod = "__AZURE_SUBSCRIPTION_ID_PROD__"
   }
 
   # Google Cloud project IDs, keyed by environment.

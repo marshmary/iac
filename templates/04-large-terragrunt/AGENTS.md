@@ -72,9 +72,10 @@ Danger notes:
 ## How to grow
 
 - Add a component: create `platforms/<cloud>/envs/<env>/<component>/terragrunt.hcl`
-  by copying `baseline/`, point `terraform.source` at a pinned registry ref,
-  wire inputs from `include.root.locals.*`. Add dependencies between
-  components with `dependency` blocks when order matters.
+  by copying `baseline/`, point `terraform.source` at a pinned registry ref
+  (or keep the vendored `modules-local/` source), wire inputs from
+  `include.root.locals.*`. Add dependencies between components with
+  `dependency` blocks when order matters.
 - Add an environment: follow `runbooks/adding-an-environment.md` (copy the
   `envs/` subtree per platform, extend `common/accounts.hcl`; state keys
   inherit the pattern automatically).
@@ -82,10 +83,12 @@ Danger notes:
   bootstrap.md + envs/), add the registries entries in `common/` - three
   files plus registry keys, nothing else.
 
-## Modules live in the registry repo
+## Module sources: local default, registry endgame
 
-This tree contains NO module code. Every `terraform.source` points at the
-module registry repository:
+Components DEFAULT to the vendored provider-free baseline
+(`modules-local/baseline`) so plans work before any registry exists. The
+endgame is a module registry repository; the registry form sits commented in
+every component's `terragrunt.hcl`:
 
     git::https://github.com/__PROJECT_NAME__/iac-modules.git//baseline?ref=v0.0.0
 
@@ -93,8 +96,8 @@ module registry repository:
 
 - always pin `?ref=vX.Y.Z` - a tag, never a branch;
 - bump pins via PR so reviewers see module changes land;
-- a local escape hatch exists (vendoring into `modules-local/` at the repo
-  root) - documented in each component's header comment.
+- staying vendored is fine: treat `modules-local/*` as reviewed code (PRs,
+  tests, committed - never git-ignored).
 
 ## Pointers
 
