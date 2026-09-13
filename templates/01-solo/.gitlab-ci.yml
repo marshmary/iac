@@ -1,0 +1,26 @@
+# Minimal GitLab CI equivalent (opt-in — init-project --ci gitlab; the
+# local-first default ships no pipeline).
+#
+# Runs the offline checks the project already ships. No cloud credentials
+# are needed or configured here. Keep tool versions in sync with the
+# version-pin files (.opentofu-version).
+
+check:
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache bash curl unzip
+    - TOFU=1.12.0
+    - >
+      curl -fsSL
+      "https://github.com/opentofu/opentofu/releases/download/v${TOFU}/tofu_${TOFU}_linux_amd64.zip"
+      -o /tmp/tofu.zip
+      && unzip -o /tmp/tofu.zip -d /usr/local/bin tofu
+    - >
+      curl -fsSL
+      https://github.com/go-task/task/releases/download/v3.39.2/task_linux_amd64.tar.gz
+      | tar -xz -C /usr/local/bin task
+  script:
+    - task check
+    # native tests need a backend-less tree (backend.tf points at the real
+    # state bucket; CI has no creds) - same trick as the catalog's T4
+    - rm -f backend.tf .terraform.lock.hcl && tofu init -backend=false && tofu test

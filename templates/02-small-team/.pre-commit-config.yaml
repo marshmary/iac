@@ -17,6 +17,9 @@ repos:
       - id: terraform_tflint
         exclude: ^providers/
 
+      - id: checkov
+        exclude: ^providers/
+
       - id: terraform_docs
         args:
           - --args=--output-file README.md

@@ -14,11 +14,12 @@ ARG TG_VERSION=1.1.4
 ARG TFLINT_VERSION=0.53.0
 ARG TASK_VERSION=3.39.2
 ARG CONFTEST_VERSION=0.55.0
+ARG CHECKOV_VERSION=3.3.17
 
-RUN apk add --no-cache bash curl unzip git grep findutils coreutils ca-certificates && \
+RUN apk add --no-cache bash curl unzip git grep findutils coreutils ca-certificates python3 py3-pip && \
     case "${TARGETARCH}" in \
-      arm64|aarch64) ARCH=arm64;  CONF_ARCH=aarch64 ;; \
-      *)             ARCH=amd64;  CONF_ARCH=x86_64   ;; \
+      arm64|aarch64) ARCH=arm64;  CONF_ARCH=aarch64   ;; \
+      *)             ARCH=amd64;  CONF_ARCH=x86_64    ;; \
     esac && \
     echo "installing tools for linux/${ARCH}" && \
     curl -fsSL "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_${ARCH}.zip" -o /tmp/tofu.zip && \
@@ -32,9 +33,10 @@ RUN apk add --no-cache bash curl unzip git grep findutils coreutils ca-certifica
     curl -fsSL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_${CONF_ARCH}.tar.gz" | tar -xz -C /usr/local/bin conftest && \
     chmod +x /usr/local/bin/tofu /usr/local/bin/terraform /usr/local/bin/terragrunt \
              /usr/local/bin/tflint /usr/local/bin/task /usr/local/bin/conftest && \
+    pip install --break-system-packages --no-cache-dir "checkov==${CHECKOV_VERSION}" && \
     rm -rf /tmp/*.zip && \
     tofu --version && terraform --version && terragrunt --version && \
-    tflint --version && task --version && conftest --version
+    tflint --version && task --version && conftest --version && checkov --version
 
 # Shared provider-download cache so the matrix downloads each provider once.
 RUN mkdir -p /tmp/.terraform-plugin-cache

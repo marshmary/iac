@@ -109,6 +109,26 @@ tasks:
     cmds:
       - '{{.TG_BIN}} run apply --all {{.TG_ARGS}} --working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}} --non-interactive'
 
+  drift:
+    desc: Detect drift for one component (plan -detailed-exitcode; exit 2 = drift)
+    cmds:
+      # Read-only: no plan file written, no state lock taken. Exit 0 = clean,
+      # 2 = drift (see the diff above), anything else = plan failure.
+      # Cadence: schedule this weekly (see runbooks/drift-remediation.md and
+      # the scheduled workflow in the CI skeleton).
+      - |
+        {{.TG_BIN}} plan {{.TG_ARGS}} --working-dir platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}} -detailed-exitcode -lock=false
+        code=$?
+        if [ "$code" = "0" ]; then
+          echo "no drift: platforms/{{.PLATFORM}}/envs/{{.ENV}}/{{.COMPONENT}} matches its state."
+        elif [ "$code" = "2" ]; then
+          echo "DRIFT detected - review the diff above and reconcile deliberately; see runbooks/drift-remediation.md." >&2
+          exit 2
+        else
+          echo "plan failed (exit $code)" >&2
+          exit "$code"
+        fi
+
   policy-check:
     desc: OPA/conftest gate on the saved tfplan (requires conftest and a prior task plan)
     preconditions:

@@ -3,7 +3,8 @@
 #
 # Usage:
 #   scripts/init-project.sh -t <01|02|03|04> -p <aws|azure|gcp> -n <kebab-name> -d <dest-dir>
-#                           [-e <tofu|terraform>] [--region <region>] [--no-git] [--allow-tokens]
+#                           [-e <tofu|terraform>] [--ci <github|gitlab|none>]
+#                           [--region <region>] [--no-git] [--allow-tokens]
 #
 # What it does (the contract documented in AGENTS.md):
 #   1. copies templates/<tier>/ to <dest>
@@ -11,14 +12,15 @@
 #   3. copies shared docs (conventions, engine-duality, migrations) into <dest>/docs
 #   4. substitutes __TOKEN__ placeholders (defaults in docs/placeholders.md)
 #   5. fails if any __TOKEN__ survives (unless --allow-tokens)
-#   6. git init (unless --no-git) and prints next steps
+#   6. keeps the CI skeleton you asked for (--ci github|gitlab; default none strips them)
+#   7. git init (unless --no-git) and prints next steps
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-usage() { sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
+usage() { sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 
-TIER="" PROVIDER="" NAME="" DEST="" ENGINE="tofu" REGION_OVERRIDE="" NO_GIT=0 ALLOW_TOKENS=0
+TIER="" PROVIDER="" NAME="" DEST="" ENGINE="tofu" REGION_OVERRIDE="" NO_GIT=0 ALLOW_TOKENS=0 CI_TARGET="none"
 while [ $# -gt 0 ]; do
   case "$1" in
     -t|--tier) TIER="${2:?}"; shift 2 ;;
@@ -26,6 +28,7 @@ while [ $# -gt 0 ]; do
     -n|--name) NAME="${2:?}"; shift 2 ;;
     -d|--dest) DEST="${2:?}"; shift 2 ;;
     -e|--engine) ENGINE="${2:?}"; shift 2 ;;
+    --ci) CI_TARGET="${2:?}"; shift 2 ;;
     --region) REGION_OVERRIDE="${2:?}"; shift 2 ;;
     --no-git) NO_GIT=1; shift ;;
     --allow-tokens) ALLOW_TOKENS=1; shift ;;
@@ -37,6 +40,7 @@ done
 [ -n "$TIER" ] && [ -n "$NAME" ] && [ -n "$DEST" ] || usage
 case "$TIER" in 01|02|03|04) ;; *) echo "error: -t must be 01, 02, 03 or 04" >&2; exit 1 ;; esac
 case "$ENGINE" in tofu|terraform) ;; *) echo "error: -e must be tofu or terraform" >&2; exit 1 ;; esac
+case "$CI_TARGET" in github|gitlab|none) ;; *) echo "error: --ci must be github, gitlab or none" >&2; exit 1 ;; esac
 if [ "$TIER" != "04" ]; then
   case "$PROVIDER" in aws|azure|gcp) ;; *) echo "error: -p must be aws, azure or gcp (tier 04 keeps all platforms)" >&2; exit 1 ;; esac
 else
@@ -174,6 +178,15 @@ if [ "$ALLOW_TOKENS" -ne 1 ]; then
     exit 1
   fi
 fi
+
+# --- CI skeletons (opt-in: --ci github|gitlab; default none strips them) -----
+# The local-first philosophy ships NO pipeline by default; the skeletons stay
+# in the tier templates so a plain init never produces one unless asked.
+case "$CI_TARGET" in
+  github) rm -f "$DEST/.gitlab-ci.yml" ;;
+  gitlab) rm -rf "$DEST/.github/workflows"; rmdir "$DEST/.github" 2>/dev/null || true ;;
+  none)   rm -rf "$DEST/.github/workflows" "$DEST/.gitlab-ci.yml"; rmdir "$DEST/.github" 2>/dev/null || true ;;
+esac
 
 # --- engine preference + git -----------------------------------------------------------
 printf '# local preferences (gitignored)\nIAC_ENGINE=%s\n' "$ENGINE" > "$DEST/.env"

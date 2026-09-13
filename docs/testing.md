@@ -9,7 +9,7 @@ Level T0 runs with nothing but a POSIX shell installed.
 | Level | Check | Needs | Proves |
 |-------|-------|-------|--------|
 | T0 | golden-manifest tree compare (init → `find \| sort` vs `tests/manifests/`) + zero surviving tokens + pin consistency (`tests/check-pins.{sh,ps1}`) | shell only | init script, merge rules, substitution, atomic engine pins |
-| T1 | `fmt -check -recursive`, `tflint`, `terragrunt hcl fmt --check` | CLIs, no creds | syntax, lint |
+| T1 | `fmt -check -recursive`, `tflint`, `checkov` (security; tier `.checkov.yaml` carries documented suppressions), `terragrunt hcl fmt --check` | CLIs, no creds | syntax, lint, security baseline |
 | T2 | `init -backend=false` + `validate` on every root/unit | CLIs + registry access | configs parse, provider schemas resolve, wiring consistent |
 | T3 | offline plan: `plan -refresh=false -var dry_run=true` with fake creds (`tests/fixtures/*.env`) | CLIs, no cloud | variables/type constraints, starter resources plan |
 | T4 | `tofu test` with native tests (mock-free where possible) | `tofu` | behavioral assertions on modules |
@@ -79,5 +79,6 @@ work is done; a future CI pipeline calls the identical tasks.
 ## Installing the CLIs (optional, for the full matrix)
 
 tofu (`tenv` or the OpenTofu installer), terraform, terragrunt (tgenv),
-tflint, go-task, conftest — all single binaries; `tenv` can manage tofu,
-terraform, and terragrunt pins together and reads this repo's version files.
+tflint, go-task, conftest, checkov (pip) — all single binaries except the
+last; `tenv` can manage tofu, terraform, and terragrunt pins together and
+reads this repo's version files.

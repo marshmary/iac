@@ -38,18 +38,20 @@ run_init() { # $1 tier, $2 provider, $3 dest -> 0/1
 
 engine_loop() { # $1 tier, $2 provider, $3 dest — runs T1..T5 per available engine
   local tier="$1" prov="$2" dest="$3" eng bin
+
+  # roots that are self-contained (shared by T1 tflint/checkov and T2
+  # init/validate); engine-independent, computed once
+  local roots=""
+  case "$tier" in
+    01) roots="." ;;
+    02) for d in "$dest"/envs/*/; do [ -d "$d" ] && roots="$roots ${d#"$dest"/}"; done ;;
+    03) roots="modules/baseline" ;;
+    04) roots="" ;; # modules live in the external registry; hcl-validate covers units
+  esac
+
   for eng in tofu terraform; do
     bin="$(resolve_engine_bin "$eng")"
     [ -n "$bin" ] || { result SKIP "T1-T5/$tier-$prov/$eng" "engine not installed"; continue; }
-
-    # roots that are self-contained (shared by T1 tflint and T2 init/validate)
-    local roots=""
-    case "$tier" in
-      01) roots="." ;;
-      02) for d in "$dest"/envs/*/; do [ -d "$d" ] && roots="$roots ${d#"$dest"/}"; done ;;
-      03) roots="modules/baseline" ;;
-      04) roots="" ;; # modules live in the external registry; hcl-validate covers units
-    esac
 
     ( cd "$dest" && "$bin" fmt -check -recursive >/dev/null 2>&1 ) \
       && result PASS "T1/$tier-$prov/$eng" "fmt -check" || result FAIL "T1/$tier-$prov/$eng" "fmt -check"
@@ -135,6 +137,23 @@ engine_loop() { # $1 tier, $2 provider, $3 dest — runs T1..T5 per available en
       result SKIP "T4/$tier-$prov/$eng" "mock tests are OpenTofu-only"
     fi
   done
+
+  # T1: checkov security scan — engine-independent, so it runs ONCE per
+  # tier x provider (the heavy python scan gains nothing from the second
+  # engine pass). The tier's .checkov.yaml carries documented suppressions
+  # (starter resources).
+  if [ -n "$roots" ]; then
+    if have checkov; then
+      local r cok=1
+      for r in $roots; do
+        ( cd "$dest/$r" && checkov -d . --config-file "$dest/.checkov.yaml" >/dev/null 2>&1 ) || cok=0
+      done
+      [ "$cok" = 1 ] && result PASS "T1/$tier-$prov/checkov" "checkov" \
+                     || result FAIL "T1/$tier-$prov/checkov" "checkov"
+    else
+      result SKIP "T1/$tier-$prov/checkov" "checkov not installed"
+    fi
+  fi
 
   # terragrunt structural checks (engine-independent)
   if have terragrunt; then

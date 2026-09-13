@@ -14,8 +14,8 @@
 | 1 | Verified defects | **Done** |
 | 2 | Cross-tier drift sweep | **Done** |
 | 3a | Verification capabilities: pin test, rego tests, dotenv, ps1 parity | **Done** |
-| 3b | Pipeline capabilities: CI skeletons, drift task, security scanning | In progress |
-| 3c | UX & first-run: tier 04 bootstrap, interactive chooser, playground pass | Pending |
+| 3b | Pipeline capabilities: CI skeletons, drift task, security scanning | **Done** |
+| 3c | UX & first-run: tier 04 bootstrap, interactive chooser, playground pass | In progress |
 | 4 | Polish: line endings, README prune, Renovate, LICENSE decision | Pending |
 
 Legend: Pending → In progress → **Done (`<commit>`)** or Skipped (reason).

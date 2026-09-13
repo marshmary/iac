@@ -29,6 +29,7 @@ repos:
       - id: terraform_fmt
       - id: terraform_tflint
       - id: terraform_docs
+      - id: checkov
       # terraform_validate is intentionally OMITTED: with no vendored modules
       # it has nothing to chew on - `task hcl-validate` / `task check` are the
       # real validation gates here (they go through Terragrunt, backend and

@@ -1,3 +1,4 @@
+./.checkov.yaml
 ./.env
 ./.env.example
 ./.gitignore

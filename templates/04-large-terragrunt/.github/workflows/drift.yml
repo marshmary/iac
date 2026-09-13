@@ -1,0 +1,42 @@
+# Scheduled drift detection (opt-in CI skeleton; the drift-remediation
+# runbook prescribes the weekly cadence).
+#
+# PREREQUISITE: read-only cloud credentials for the scanned environment.
+# Wire OIDC (see .env.example placeholders), e.g. for AWS:
+#   - uses: aws-actions/configure-aws-credentials@v4
+#     with:
+#       role-to-assume: arn:aws:iam::<account>:role/terraform-readonly
+#       aws-region: <region>
+name: drift
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # Mondays 06:00 UTC
+  workflow_dispatch: {}    # manual runs for verification
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.12.0   # keep in sync with .opentofu-version
+
+      - name: Install go-task
+        run: >
+          curl -fsSL https://github.com/go-task/task/releases/download/v3.39.2/task_linux_amd64.tar.gz
+          | sudo tar -xz -C /usr/local/bin task
+
+      - name: Install terragrunt
+        run: >
+          curl -fsSL
+          https://github.com/gruntwork-io/terragrunt/releases/download/v1.1.4/terragrunt_linux_amd64
+          | sudo tee /usr/local/bin/terragrunt > /dev/null
+          && sudo chmod +x /usr/local/bin/terragrunt
+
+      # Reads only: task drift runs `plan -detailed-exitcode -lock=false` and
+      # exits non-zero when drift is found, failing this job on purpose.
+      - name: Detect drift (dev baseline)
+        run: task drift PLATFORM=aws ENV=dev COMPONENT=baseline

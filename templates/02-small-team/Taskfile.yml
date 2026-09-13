@@ -109,6 +109,26 @@ tasks:
       # The state backend itself must still be reachable.
       - '{{.IAC_BIN}} plan -refresh=false -var-file={{.ENV}}.tfvars -var dry_run=true'
 
+  drift:
+    desc: Detect drift for one env (plan -detailed-exitcode; exit 2 = drift)
+    deps: [init-backend]
+    dir: envs/{{.ENV}}
+    cmds:
+      # Read-only: no plan file written, no state lock taken. Exit 0 = clean,
+      # 2 = drift (see the diff above), anything else = plan failure.
+      - |
+        {{.IAC_BIN}} plan -lock=false -refresh=true -var-file={{.ENV}}.tfvars -detailed-exitcode
+        code=$?
+        if [ "$code" = "0" ]; then
+          echo "no drift: envs/{{.ENV}} matches its state."
+        elif [ "$code" = "2" ]; then
+          echo "DRIFT detected in envs/{{.ENV}} - review the diff above and reconcile deliberately; never auto-apply drift." >&2
+          exit 2
+        else
+          echo "plan failed (exit $code)" >&2
+          exit "$code"
+        fi
+
   apply:
     desc: Apply the reviewed tfplan of one env (refuses to run without one)
     deps: [init-backend]

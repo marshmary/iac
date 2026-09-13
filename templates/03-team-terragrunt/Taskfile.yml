@@ -113,6 +113,27 @@ tasks:
     cmds:
       - '{{.TG_BIN}} plan {{.TG_ARGS}} --working-dir envs/{{.ENV}}/{{.COMPONENT}} -out=tfplan'
 
+  drift:
+    desc: Detect drift for one unit (plan -detailed-exitcode; exit 2 = drift)
+    deps: [engine-check]
+    cmds:
+      # Read-only: no plan file written, no state lock taken. Exit 0 = clean,
+      # 2 = drift (see the diff above), anything else = plan failure.
+      # Cadence: schedule this weekly (the drift-remediation runbook pattern);
+      # in CI wire it as a scheduled job.
+      - |
+        {{.TG_BIN}} plan {{.TG_ARGS}} --working-dir envs/{{.ENV}}/{{.COMPONENT}} -detailed-exitcode -lock=false
+        code=$?
+        if [ "$code" = "0" ]; then
+          echo "no drift: envs/{{.ENV}}/{{.COMPONENT}} matches its state."
+        elif [ "$code" = "2" ]; then
+          echo "DRIFT detected in envs/{{.ENV}}/{{.COMPONENT}} - review the diff above and reconcile deliberately; never auto-apply drift." >&2
+          exit 2
+        else
+          echo "plan failed (exit $code)" >&2
+          exit "$code"
+        fi
+
   apply:
     desc: Apply the reviewed tfplan for one component (ENV, COMPONENT)
     deps: [engine-check]

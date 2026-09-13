@@ -54,7 +54,10 @@ tokens by hardcoding values.
 
 After merge: global token substitution (defaults in `docs/placeholders.md`),
 copy `docs/{conventions.md,engine-duality.md,migrations/}` into the project,
-`git init` (unless `--no-git`), fail if any `__[A-Z0-9_]+__` remains.
+resolve the CI skeleton per `--ci <github|gitlab|none>` (every tier ships
+`.github/workflows/` + `.gitlab-ci.yml` skeletons in its template; the
+default `none` strips them — local-first), `git init` (unless `--no-git`),
+fail if any `__[A-Z0-9_]+__` remains.
 
 ## Verification protocol before you claim done
 

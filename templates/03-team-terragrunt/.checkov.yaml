@@ -1,0 +1,11 @@
+# checkov configuration - IaC security scanning (https://www.checkov.io).
+# Wired into: the `checkov` pre-commit hook and the catalog's run-all T1.
+# CLI: checkov -d .   (loads this file; pass --config-file when running
+# from another directory, e.g. modules/<name>)
+quiet: true
+compact: true
+framework:
+  - terraform
+# Suppressions live here, one CKV_* id per entry, ALWAYS with a documented
+# reason. Do not stack skips silently.
+skip-check: []

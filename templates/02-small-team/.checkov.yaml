@@ -1,0 +1,30 @@
+# checkov configuration - IaC security scanning (https://www.checkov.io).
+# Wired into: the `checkov` pre-commit hook and the catalog's run-all T1.
+# CLI: checkov -d .   (loads this file; pass --config-file when running
+# from another directory, e.g. the envs/<env> roots)
+quiet: true
+compact: true
+framework:
+  - terraform
+# Suppressions live here, one CKV_* id per entry, ALWAYS with a documented
+# reason. Do not stack skips silently.
+#
+# The starter bucket is a REPLACE-ME demo (see envs/*/starter.tf): it
+# intentionally ships bare so the naming/tag wiring is visible. Real buckets
+# must add the companion resources (encryption config, versioning,
+# public-access block, lifecycle, event notifications) and then DELETE these
+# skips.
+skip-check:
+  - CKV_AWS_18   # starter: S3 encryption - demo resource
+  - CKV_AWS_19   # starter: S3 CMK encryption - demo resource
+  - CKV_AWS_21   # starter: S3 versioning - demo resource
+  - CKV_AWS_144  # starter: S3 cross-region replication - demo resource
+  - CKV_AWS_145  # starter: S3 KMS-by-default - demo resource
+  - CKV2_AWS_6   # starter: S3 public access block - demo resource
+  - CKV2_AWS_61  # starter: S3 lifecycle configuration - demo resource
+  - CKV2_AWS_62  # starter: S3 event notifications - demo resource
+  # Same story for the GCP starter bucket (envs/*/starter.tf):
+  - CKV_GCP_114  # starter: public access prevention - demo resource
+  - CKV_GCP_29   # starter: uniform bucket-level access - demo resource
+  - CKV_GCP_78   # starter: versioning - demo resource
+  - CKV_GCP_62   # starter: access logging - demo resource

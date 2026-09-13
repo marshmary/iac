@@ -13,7 +13,8 @@
     3. copies shared docs (conventions, engine-duality, migrations) into -Dest\docs
     4. substitutes __TOKEN__ placeholders (defaults in docs/placeholders.md)
     5. fails if any __TOKEN__ survives
-    6. git init (unless -NoGit) and prints next steps
+    6. keeps the CI skeleton you asked for (-CI github|gitlab; default none strips them)
+    7. git init (unless -NoGit) and prints next steps
 #>
 [CmdletBinding()]
 param(
@@ -22,6 +23,7 @@ param(
   [Parameter(Mandatory = $true)][ValidatePattern('^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$')][string]$Name,
   [Parameter(Mandatory = $true)][string]$Dest,
   [ValidateSet('tofu', 'terraform')][string]$Engine = 'tofu',
+  [ValidateSet('github', 'gitlab', 'none')][string]$Ci = 'none',
   [string]$Region = '',
   [switch]$NoGit,
   [switch]$AllowTokens
@@ -179,6 +181,30 @@ if (-not $AllowTokens) {
     $leftovers | ForEach-Object { Write-Error ("{0}:{1}: {2}" -f $_.Path, $_.LineNumber, $_.Line.Trim()) }
     throw "unsubstituted tokens remain (see errors above)"
   }
+}
+
+# --- CI skeletons (opt-in: -CI github|gitlab; default none strips them) --------
+# The local-first philosophy ships NO pipeline by default; the skeletons stay
+# in the tier templates so a plain init never produces one unless asked.
+$ciWorkflows = Join-Path $Dest '.github/workflows'
+$ciGitlab = Join-Path $Dest '.gitlab-ci.yml'
+switch ($Ci) {
+  'github' {
+    if (Test-Path $ciGitlab) { Remove-Item -Force $ciGitlab }
+  }
+  'gitlab' {
+    if (Test-Path $ciWorkflows) { Remove-Item -Recurse -Force $ciWorkflows }
+  }
+  default {
+    if (Test-Path $ciWorkflows) { Remove-Item -Recurse -Force $ciWorkflows }
+    if (Test-Path $ciGitlab) { Remove-Item -Force $ciGitlab }
+  }
+}
+# drop a now-empty .github (tier 02 keeps its PR template, so only empty dirs go)
+$githubDir = Join-Path $Dest '.github'
+if (Test-Path $githubDir) {
+  $left = @(Get-ChildItem $githubDir -Force)
+  if ($left.Count -eq 0) { Remove-Item -Force $githubDir }
 }
 
 # --- engine preference + git -----------------------------------------------------------

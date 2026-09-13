@@ -36,7 +36,9 @@ scripts/init-project.ps1 -Tier 01 -Provider aws -Name my-app -Dest ..\my-app
 
 Flags: `-t/--tier` (01–04), `-p/--provider` (aws/azure/gcp; ignored for tier 04,
 which keeps all platforms), `-e/--engine` (tofu default / terraform), `-n/--name`
-(kebab-case slug), `-d/--dest`, `--region` (override default), `--no-git`.
+(kebab-case slug), `-d/--dest`, `--region` (override default), `--no-git`,
+`--ci <github|gitlab|none>` (opt-in pipeline skeleton; default `none` ships no
+CI, staying local-first).
 
 The init script copies the tier, merges the chosen cloud's `providers/` layer,
 substitutes every `__TOKEN__`, copies shared docs into the new project, runs
@@ -77,6 +79,7 @@ iac/
 
 ## Future extensions (deliberately out of scope)
 
-CI pipelines (tiers 02+ ship CODEOWNERS + PR template so wiring is trivial;
-`tests/run-all.sh` is exactly what CI would call), copier/cookiecutter
-generator, Infracost, scheduled drift detection.
+Copier/cookiecutter generator, Infracost. (CI is no longer on this list: tiers
+ship opt-in pipeline skeletons — `init-project --ci github|gitlab` — running
+the same offline checks `tests/run-all.sh` calls; tier 03/04 skeletons include
+a scheduled drift job.)
