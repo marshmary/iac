@@ -2,9 +2,11 @@
 # Taskfile/HCL/pre-commit tooling on Windows mis-handles CRLF in these files.
 * text=auto eol=lf
 
-# Shell scripts must never get CRLF, even under core.autocrlf=true
+# Shell scripts must never get CRLF, even under core.autocrlf=true.
+# *.ps1 stays LF too: PowerShell 5.1 handles LF-only scripts, .editorconfig
+# mandates LF, and the two tools must not rewrite each other's files.
 *.sh text eol=lf
-*.ps1 text eol=crlf
+*.ps1 text eol=lf
 
 # Binaries (none today, reserved)
 *.png binary

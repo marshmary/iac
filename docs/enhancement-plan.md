@@ -2,10 +2,11 @@
 
 > Working document created 2026-09-12 from a full-repo scan (templates, scripts,
 > tests, playground, docs). Every "verified" finding below was checked directly
-> against the code before being listed. This file tracks execution status as
-> work lands; it is not a contract like `conventions.md` — when a phase
-> completes, its behavioral changes get folded into the real contract docs and
-> this file becomes historical.
+> against the code before being listed. **Status: all phases executed 2026-09-13**
+> (see the table and the phase commits). As promised, the behavioral outcomes
+> have been folded into the real contract docs (`docs/conventions.md`,
+> `docs/testing.md`, `docs/placeholders.md`, AGENTS.md); this file is now
+> historical — keep only the open item (LICENSE) on your radar.
 
 ## Status overview
 
@@ -16,7 +17,7 @@
 | 3a | Verification capabilities: pin test, rego tests, dotenv, ps1 parity | **Done** |
 | 3b | Pipeline capabilities: CI skeletons, drift task, security scanning | **Done** |
 | 3c | UX & first-run: tier 04 bootstrap, interactive chooser, playground pass | **Done** |
-| 4 | Polish: line endings, README prune, Renovate, LICENSE decision | In progress |
+| 4 | Polish: line endings, README prune, Renovate, LICENSE decision | **Done** (LICENSE: deferred — owner decision) |
 
 Legend: Pending → In progress → **Done (`<commit>`)** or Skipped (reason).
 Executing agents update their own phase status in this file as the last step

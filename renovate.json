@@ -1,0 +1,124 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Keeps the CATALOG's own tool pins current (runner image ARGs, tier version files). Generated projects intentionally carry static pins - they teach reproducible setups; bumping catalog pins is a deliberate, reviewed change, so schedule is weekly and everything lands as one grouped PR.",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    "docker:pinDigests"
+  ],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 1,
+  "rangeStrategy": "pin",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "OpenTofu pin in the runner image",
+      "fileMatch": ["^tests/docker/Dockerfile\\.runner$"],
+      "matchStrings": ["ARG TOFU_VERSION=(?<currentValue>\\S+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "opentofu/opentofu",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Terraform pin in the runner image",
+      "fileMatch": ["^tests/docker/Dockerfile\\.runner$"],
+      "matchStrings": ["ARG TF_VERSION=(?<currentValue>\\S+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "hashicorp/terraform",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Terragrunt pin in the runner image",
+      "fileMatch": ["^tests/docker/Dockerfile\\.runner$"],
+      "matchStrings": ["ARG TG_VERSION=(?<currentValue>\\S+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "gruntwork-io/terragrunt",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "tflint pin in the runner image",
+      "fileMatch": ["^tests/docker/Dockerfile\\.runner$"],
+      "matchStrings": ["ARG TFLINT_VERSION=(?<currentValue>\\S+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "terraform-linters/tflint",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "go-task pin in the runner image",
+      "fileMatch": ["^tests/docker/Dockerfile\\.runner$"],
+      "matchStrings": ["ARG TASK_VERSION=(?<currentValue>\\S+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "go-task/task",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "conftest pin in the runner image",
+      "fileMatch": ["^tests/docker/Dockerfile\\.runner$"],
+      "matchStrings": ["ARG CONFTEST_VERSION=(?<currentValue>\\S+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "open-policy-agent/conftest",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "checkov pin in the runner image (PyPI)",
+      "fileMatch": ["^tests/docker/Dockerfile\\.runner$"],
+      "matchStrings": ["ARG CHECKOV_VERSION=(?<currentValue>\\S+)"],
+      "datasourceTemplate": "pypi",
+      "depNameTemplate": "checkov"
+    },
+    {
+      "customType": "regex",
+      "description": ".terraform-version files in every tier",
+      "fileMatch": ["^templates/[^/]+/\\.terraform-version$"],
+      "matchStrings": ["^(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s*$"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "hashicorp/terraform",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": ".opentofu-version files in every tier",
+      "fileMatch": ["^templates/[^/]+/\\.opentofu-version$"],
+      "matchStrings": ["^(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s*$"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "opentofu/opentofu",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": ".terragrunt-version files in tiers 03/04",
+      "fileMatch": ["^templates/[^/]+/\\.terragrunt-version$"],
+      "matchStrings": ["^(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s*$"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "gruntwork-io/terragrunt",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Engine pins must move atomically (tests/check-pins.sh enforces it) - bundle every tool bump into one PR so the pin gate stays green.",
+      "matchPackageNames": [
+        "opentofu/opentofu",
+        "hashicorp/terraform",
+        "gruntwork-io/terragrunt"
+      ],
+      "groupName": "iac engine pins (atomic)"
+    },
+    {
+      "description": "Runner-only tooling bumps (safe to take independently).",
+      "matchPackageNames": [
+        "terraform-linters/tflint",
+        "go-task/task",
+        "open-policy-agent/conftest",
+        "checkov"
+      ],
+      "groupName": "runner-only tooling"
+    }
+  ]
+}
