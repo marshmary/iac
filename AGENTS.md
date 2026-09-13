@@ -13,6 +13,11 @@ tokens by hardcoding values.
 - `templates/03-team-terragrunt/` — Terragrunt `root.hcl` + `envs/<env>/<component>/`
 - `templates/04-large-terragrunt/` — `common/` registries + `platforms/{aws,azure,gcp}/` + `policy/` + `runbooks/`
 - `scripts/init-project.{sh,ps1}` — instantiation (contract below)
+- `scripts/bootstrap.{sh,ps1}` — thin fetch-and-delegate one-liner entry
+  (curl | bash / irm-style iex); fetches a pinned release, verifies sha256,
+  delegates to the init scripts. Must contain NO template logic — the T0
+  parity gate in `tests/run-all.{sh,ps1}` enforces this
+  (`docs/adr/0001-one-liner-installer.md`).
 - `tests/` — `run-all.{sh,ps1}` matrix runner, `manifests/` golden trees, fixtures
 - `playground/` — disposable LocalStack harness (`up.sh`/`down.sh`) to apply all
   four tiers without a cloud account; artifacts under `playground/projects/` gitignored
@@ -59,6 +64,9 @@ resolve the CI skeleton per `--ci <github|gitlab|none>` (every tier ships
 default `none` strips them — local-first), `git init` (unless `--no-git`),
 fail if any `__[A-Z0-9_]+__` remains.
 
+The bootstrap scripts are an entry wrapper around this contract — they fetch
+a release and delegate; they are never a second implementation of it.
+
 ## Verification protocol before you claim done
 
 1. `bash -n scripts/*.sh tests/*.sh` — syntax.
@@ -67,7 +75,8 @@ fail if any `__[A-Z0-9_]+__` remains.
 4. `tests/run-in-docker.sh` — the full T0–T5 matrix in the pinned runner
    container (docker/podman auto-detected; no host CLIs needed). This is the
    authoritative gate. Plain `tests/run-all.sh` works too when CLIs exist;
-   with none installed it still runs T0 (init + manifest compare + sweep).
+   with none installed it still runs T0 (init + manifest compare + sweep +
+   bootstrap parity/tamper gate).
 5. Structural sweep: every tier has `AGENTS.md`, `README.md`, `Taskfile.yml`,
    `.pre-commit-config.yaml`, `.tflint.hcl`, both version-pin files
    (+ `.terragrunt-version` for tiers 03/04).
@@ -79,6 +88,8 @@ fail if any `__[A-Z0-9_]+__` remains.
 - New check → `tests/run-all.{sh,ps1}` + `docs/testing.md`.
 - New migration guide → `docs/migrations/NN-to-MM.md`.
 - New tier → extend the table above, README, run-all, and gen-manifests.
+- New distribution entry point → keep `bootstrap.{sh,ps1}` thin + parity
+  gate in `tests/run-all.{sh,ps1}` + `docs/testing.md`.
 
 ## Commit conventions
 

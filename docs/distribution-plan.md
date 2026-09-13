@@ -13,7 +13,7 @@
 |-------|-------|--------|
 | D1 | ADR-0001 + release process doc + CONTRIBUTING releases section | **Done** |
 | D2 | `scripts/bootstrap.{sh,ps1}` + T0 parity/tamper gate + `docs/testing.md` | **Done** |
-| D3 | README + AGENTS.md alignment with the new entry point | Pending |
+| D3 | README + AGENTS.md alignment with the new entry point | **Done** |
 | D4 | First release cut `v0.1.0` (checksums, one-liner verification) | **Owner action — not an agent phase** |
 
 Legend: Pending → In progress → **Done (`<commit>`)** or Skipped (reason).
