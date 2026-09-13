@@ -8,7 +8,7 @@ Level T0 runs with nothing but a POSIX shell installed.
 
 | Level | Check | Needs | Proves |
 |-------|-------|-------|--------|
-| T0 | golden-manifest tree compare (init → `find \| sort` vs `tests/manifests/`) + zero surviving tokens + pin consistency (`tests/check-pins.{sh,ps1}`) | shell only | init script, merge rules, substitution, atomic engine pins |
+| T0 | golden-manifest tree compare (init → `find \| sort` vs `tests/manifests/`) + zero surviving tokens + pin consistency (`tests/check-pins.{sh,ps1}`) + bootstrap parity/tamper gate | shell only | init script, merge rules, substitution, atomic engine pins, thin one-liner entry |
 | T1 | `fmt -check -recursive`, `tflint`, `checkov` (security; tier `.checkov.yaml` carries documented suppressions), `terragrunt hcl fmt --check` | CLIs, no creds | syntax, lint, security baseline |
 | T2 | `init -backend=false` + `validate` on every root/unit | CLIs + registry access | configs parse, provider schemas resolve, wiring consistent |
 | T3 | offline plan: `plan -refresh=false -var dry_run=true` with fake creds (`tests/fixtures/*.env`) | CLIs, no cloud | variables/type constraints, starter resources plan |
@@ -36,6 +36,20 @@ case-sensitive manifest compare, `task --list`, and per-engine fmt-check +
 init/validate for every engine on PATH). tflint, the terragrunt hcl checks
 and T3–T6 remain bash-runner territory; run those through
 `tests/run-in-docker.sh`.
+
+## Bootstrap gate
+
+T0 also gates the one-liner entry point (`scripts/bootstrap.{sh,ps1}`,
+`docs/adr/0001-one-liner-installer.md`): instantiating through the bootstrap
+with a local tarball source and a local directory source must produce trees
+identical to a direct `init-project` run, and a corrupted tarball must be
+rejected on sha256 mismatch. The gate runs fully offline via `--source`
+(bootstrap flag), so it needs no published release and no network — the
+remote path (latest-release resolve + `checksums.txt` fetch) is exercised by
+the manual smoke test in `docs/release-process.md` at release time. Its
+purpose is mechanical enforcement of "the bootstrap stays thin": any template
+logic sneaking into the installer shows up as a tree mismatch or a failed
+parity line.
 
 ## Full matrix in a container (zero host installs)
 

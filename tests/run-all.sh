@@ -208,6 +208,51 @@ echo "=== iac template test matrix ==="
   && result PASS "T0/pins" "version files = runner ARGs = engine-duality docs" \
   || result FAIL "T0/pins" "pin drift (run tests/check-pins.sh for details)"
 
+# T0-level bootstrap parity (docs/testing.md "Bootstrap gate"): the one-liner
+# entry (scripts/bootstrap.sh) must produce trees identical to direct init,
+# and a corrupted tarball must be rejected on sha256 mismatch. Runs fully
+# offline via --source; the remote path is release-checklist territory
+# (docs/release-process.md step 6).
+if have tar && { have sha256sum || have shasum; }; then
+  bt="$SCRATCH/bootstrap"
+  rm -rf "$bt"; mkdir -p "$bt"
+  # tarball from the working tree (not git archive HEAD): uncommitted changes
+  # must not false-fail parity
+  tar -czf "$bt/catalog.tar.gz" --exclude=.git --exclude=tests/scratch \
+      --exclude=playground/projects -C "$REPO_ROOT" .
+  if have sha256sum; then
+    good_hash="$(sha256sum "$bt/catalog.tar.gz" | cut -d' ' -f1)"
+  else
+    good_hash="$(shasum -a 256 "$bt/catalog.tar.gz" | cut -d' ' -f1)"
+  fi
+  bok=1
+  "$REPO_ROOT/scripts/bootstrap.sh" --source "$bt/catalog.tar.gz" --sha256 "$good_hash" \
+      -t 01 -p aws -n parity-check -d "$bt/tarball-A" --no-git >/dev/null 2>&1 || bok=0
+  "$REPO_ROOT/scripts/bootstrap.sh" --source "$REPO_ROOT" \
+      -t 02 -p azure -n parity-check -d "$bt/dir-B" --no-git >/dev/null 2>&1 || bok=0
+  "$REPO_ROOT/scripts/init-project.sh" -t 01 -p aws -n parity-check -d "$bt/ref-A" --no-git >/dev/null 2>&1 || bok=0
+  "$REPO_ROOT/scripts/init-project.sh" -t 02 -p azure -n parity-check -d "$bt/ref-B" --no-git >/dev/null 2>&1 || bok=0
+  if [ "$bok" = 1 ] \
+     && diff -r "$bt/tarball-A" "$bt/ref-A" >/dev/null 2>&1 \
+     && diff -r "$bt/dir-B" "$bt/ref-B" >/dev/null 2>&1; then
+    result PASS "T0/bootstrap" "tarball+dir parity = direct init"
+  else
+    result FAIL "T0/bootstrap" "bootstrap output differs from direct init"
+  fi
+
+  cp "$bt/catalog.tar.gz" "$bt/bad.tar.gz"
+  printf 'x' >> "$bt/bad.tar.gz"
+  if "$REPO_ROOT/scripts/bootstrap.sh" --source "$bt/bad.tar.gz" --sha256 "$good_hash" \
+      -t 01 -p aws -n parity-check -d "$bt/tampered" --no-git >/dev/null 2>&1; then
+    result FAIL "T0/bootstrap" "sha mismatch not rejected"
+  else
+    result PASS "T0/bootstrap" "sha mismatch rejected"
+  fi
+  rm -rf "$bt"
+else
+  result SKIP "T0/bootstrap" "tar or a sha256 tool not installed"
+fi
+
 for tier in ${TIERS:-01 02 03 04}; do
   provs="aws azure gcp"; [ "$tier" = 04 ] && provs="all"
   for prov in $provs; do
