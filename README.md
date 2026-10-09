@@ -53,10 +53,6 @@ Bootstrap flags: `--ref <tag|branch|sha>` (`-Ref`, default: latest release),
 `--sha256 <hex>`, `--source <dir|tar.gz>` (offline/testing), `--keep`;
 everything else is forwarded to the init script.
 
-> **Until the first release is published** the default mode has nothing to
-> resolve — add `--ref main` (bash) / `-Ref main` (PowerShell) to the
-> one-liners. This note is removed at `v0.1.0`.
-
 ### Fallback — clone the catalog
 
 For offline use, or environments that forbid pipe-to-shell:
