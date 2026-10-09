@@ -16,7 +16,7 @@ if [ -z "$RUNNER" ]; then
   exit 0
 fi
 
-echo ">>> $RUNNER compose down -v (removes localstack and azurite containers + volumes)"
+echo ">>> $RUNNER compose down -v (removes the three floci emulator containers + volumes)"
 "$RUNNER" compose -f "$COMPOSE" down -v
 
 echo ""
