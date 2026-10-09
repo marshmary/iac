@@ -1,38 +1,42 @@
-# T6 — optional local emulators for full apply/destroy cycles without a cloud
-# account (docs/testing.md). Usage:
+# T6 — the floci emulator trio for full local lifecycle testing without a
+# cloud account (docs/testing.md). Driven automatically by tests/t6-emulators.sh
+# (IAC_T6=1 tests/run-all.sh), or manually:
 #   docker compose -f tests/docker-compose.emulators.yml up -d
-#   # then, in a generated tier-01 project:
-#   set -a; . tests/fixtures/aws-fake.env; set +a   # includes AWS_ENDPOINT_URL
+#   set -a; . tests/fixtures/aws-fake.env; set +a   # then export AWS_ENDPOINT_URL
 #   task init-backend && task plan && task apply   # real API calls, local fake cloud
 #
-# Coverage: LocalStack community emulates S3/DynamoDB/IAM and more; Azurite
-# emulates Azure storage only (sufficient for the azure backend itself, not for
-# resource-group applies). GCP has no free emulator — use T2-T4 there.
+# Coverage: floci (AWS :4566) — S3 backend + resource applies; floci-az
+# (Azure :4577) — azurerm blob backend only (no ARM resource plane);
+# floci-gcp (GCP :4588) — gcs backend only (no google resource plane).
 services:
-  localstack:
-    # Pin the community/OSS image: the plain `latest` tag now pulls the Pro
-    # edition, which exits with "License activation failed" unless a
-    # LOCALSTACK_AUTH_TOKEN is set. `:4` is the OSS release line and needs none.
-    image: localstack/localstack:4
-    container_name: iac-localstack
-    environment:
-      - SERVICES=s3,dynamodb,sts,iam
-      - DEBUG=0
+  floci:
+    # Version-pinned release tags, mirroring playground/compose.yml (keep the
+    # two files in lockstep — same images, same pins).
+    image: floci/floci:2.2.0
+    container_name: iac-floci
     ports:
-      - "4566:4566"          # single edge endpoint; point AWS_ENDPOINT_URL here
+      - "4566:4566"          # single AWS edge endpoint; point AWS_ENDPOINT_URL here
     volumes:
-      - localstack-data:/var/lib/localstack
+      - floci-data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
 
-  azurite:
-    # Pinned to a stable release tag (same line MCR tags as `latest`); `latest`
-    # would drift independently of the localstack pin above.
-    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
-    container_name: iac-azurite
+  floci-az:
+    image: floci/floci-az:0.14.0
+    container_name: iac-floci-az
     ports:
-      - "10000:10000"        # blob; ARM_* endpoints via AZURE_STORAGE_HOST
+      - "4577:4577"          # blob endpoint base; containers under /devstoreaccount1
     volumes:
-      - azurite-data:/data
+      - floci-az-data:/app/data
+
+  floci-gcp:
+    image: floci/floci-gcp:0.10.0
+    container_name: iac-floci-gcp
+    ports:
+      - "4588:4588"          # GCS REST JSON/XML + gRPC
+    volumes:
+      - floci-gcp-data:/app/data
 
 volumes:
-  localstack-data:
-  azurite-data:
+  floci-data:
+  floci-az-data:
+  floci-gcp-data:
