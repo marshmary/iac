@@ -6,7 +6,8 @@
 > (see the table and the phase commits). As promised, the behavioral outcomes
 > have been folded into the real contract docs (`docs/conventions.md`,
 > `docs/testing.md`, `docs/placeholders.md`, AGENTS.md); this file is now
-> historical — keep only the open item (LICENSE) on your radar.
+> historical — keep the open items (LICENSE; Phase 5's docker-host live gates)
+> on your radar. Phase 5 appended 2026-10-10.
 
 ## Status overview
 
@@ -18,6 +19,7 @@
 | 3b | Pipeline capabilities: CI skeletons, drift task, security scanning | **Done** |
 | 3c | UX & first-run: tier 04 bootstrap, interactive chooser, playground pass | **Done** |
 | 4 | Polish: line endings, README prune, Renovate, LICENSE decision | **Done** (LICENSE: deferred — owner decision) |
+| 5 | Local 3-cloud emulation via floci (playground + T6) | **Done** (live docker-host gates pending) |
 
 Legend: Pending → In progress → **Done (`<commit>`)** or Skipped (reason).
 Executing agents update their own phase status in this file as the last step
@@ -188,3 +190,80 @@ work, Phase 2 is one mirrored sweep per house rules, 3b items 1+3+5 reinforce
 each other, everything else independent. Verification protocol per commit is
 the one in `AGENTS.md`: `bash -n`, PowerShell parse check, `gen-manifests`
 diff review, `run-in-docker.sh`, structural sweep.
+
+## Phase 5 — Local 3-cloud emulation via floci (playground + T6)
+
+> Appended 2026-10-10; plan approved and executed the same day. Owner chose
+> [floci](https://floci.io) (MIT) as the local emulator stack — the only free
+> suite covering all three clouds. Commits: `5c58a2d` (playground), `0010b0f`
+> (tests/T6), `09e29d6` (docs), plus this record.
+
+**Goal.** Local testing exercises all three clouds' APIs: every tier × cloud
+gets a real state backend, and AWS tiers 01/02 get full applies — replacing
+the AWS-only LocalStack harness (Azurite was booted-but-unwired, GCP had
+nothing).
+
+**What landed.**
+
+- `playground/compose.yml` + `tests/docker-compose.emulators.yml`: the pinned
+  floci trio — `floci/floci:2.2.0` (:4566, LocalStack drop-in),
+  `floci/floci-az:0.14.0` (:4577, Azurite wire-compatible),
+  `floci/floci-gcp:0.10.0` (:4588, GCS REST/gRPC). The two files' pins stay
+  in lockstep.
+- `playground/up.sh`: instantiates all 10 tier × cloud projects, localizes
+  per cloud, health-waits all three endpoints (any HTTP response — floci has
+  no health URL), and bootstraps all three state planes: S3 buckets via tofu,
+  Azure containers via `state-bootstrap/az-container.sh` (a curl+openssl
+  SharedKey PUT; HMAC cross-checked against an independent implementation),
+  GCS buckets via curl POST.
+- `playground/localize.sh`: three-cloud patcher (idempotent, marker-guarded).
+  AWS: endpoint + path-style + the three `skip_*` flags + `use_lockfile =
+  false`. Azure: `storage_account_name` → `devstoreaccount1`, `endpoint` +
+  `access_key` added, per-tier `container_name` (`tfstate-01..04` — the
+  emulator has one storage account). GCP: env-only wiring
+  (`STORAGE_EMULATOR_HOST` + `state-bootstrap/fake-gcp-credentials.json`, a
+  throwaway RSA key whose `token_uri` points at floci-gcp's unvalidated JWT
+  exchange).
+- `tests/t6-emulators.sh` wired into `run-all.sh`: T6 promoted from
+  documented-manual to an opt-in stage — `IAC_T6=1 tests/run-all.sh`. Per
+  cloud it proves backend init/apply/destroy roundtrips (AWS: a real tier-01
+  project including the starter bucket apply; azure/gcp: provider-free
+  `terraform_data` probes). Absent docker or engine → loud SKIP; the docker
+  runner auto-skips (no socket in the image).
+- Docs: `docs/testing.md` (T6 row + provider caveats), `AGENTS.md` repo map,
+  root `README.md`, `playground/README.md` (3-cloud coverage matrix +
+  gotchas).
+
+**Honest limits.** No free emulator implements the Azure ARM or Google
+resource planes: azure/gcp starter resources stay offline-validate (`task
+check`); the state plane is real on all three clouds. Templates were not
+touched — generated projects are unaffected; golden manifests zero-diff.
+
+**Spike outcomes.**
+
+- S3 conditional writes (required by S3-native `use_lockfile`) are not
+  documented by floci, and floci's own Terraform compat suite locks via a
+  DynamoDB table → localize disables lockfile locally; a single-user
+  playground loses nothing (DynamoDB recipe documented as the alternative).
+- Terraform's `gcs` backend is expected to honor `STORAGE_EMULATOR_HOST`
+  (cloud.google.com/go/storage behavior); floci-gcp implements the JWT bearer
+  exchange without validation, hence the fake-credentials fixture.
+- The azurerm backend talks to Azurite-style endpoints via `endpoint` +
+  `access_key` (SharedKey, no AAD).
+
+**Verification.** Host gates (the dev machine has no docker; engine =
+portable OpenTofu 1.13.1 under gitignored `tests/scratch/bin/`): full
+`tests/run-all.sh` matrix **55 pass / 0 fail** (T0 pins/parity/manifests,
+T1 fmt, T2 validate, T4 native tests across every tier × cloud), localized
+copies `tofu validate` clean, localize idempotent across all seven patch
+shapes, terragrunt HCL parses, `gen-manifests` zero-diff, T6 skip paths
+exercised. **Open (needs a docker host):** `tests/run-in-docker.sh`,
+`IAC_T6=1 tests/run-all.sh`, `playground/up.sh` + a tier-01 AWS apply — the
+three runtime assumptions above get their live proof there.
+
+**Sources:** [floci.io](https://floci.io), [AWS emulator](https://floci.io/aws/),
+[Azure emulator](https://floci.io/az/), [GCP emulator](https://floci.io/gcp/),
+[GCS service detail](https://floci.io/floci-gcp/services/gcs),
+[Terraform guide](https://floci.io/floci/getting-started/terraform),
+[floci-io GitHub](https://github.com/floci-io) (the compat-terraform suite
+grounded the S3 backend recipe).

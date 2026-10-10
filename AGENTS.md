@@ -19,8 +19,10 @@ tokens by hardcoding values.
   parity gate in `tests/run-all.{sh,ps1}` enforces this
   (`docs/adr/0001-one-liner-installer.md`).
 - `tests/` — `run-all.{sh,ps1}` matrix runner, `manifests/` golden trees, fixtures
-- `playground/` — disposable LocalStack harness (`up.sh`/`down.sh`) to apply all
-  four tiers without a cloud account; artifacts under `playground/projects/` gitignored
+- `playground/` — disposable floci emulator harness (`up.sh`/`down.sh`): all
+  three clouds' APIs locally (AWS :4566, Azure blob :4577, GCS :4588) so every
+  tier × cloud gets a real state backend — and tiers 01/02 AWS a full apply —
+  without a cloud account; artifacts under `playground/projects/` gitignored
 - `docs/` — conventions (authoritative), placeholders, engine-duality, testing, references, migrations
 - `CONTRIBUTING.md` — trunk-based workflow + commit style (see below)
 - Each tier folder also contains its own `AGENTS.md` — that one ships INTO

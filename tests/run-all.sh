@@ -7,6 +7,7 @@
 # Usage:
 #   tests/run-all.sh                # full matrix, auto-detects tools
 #   TIERS="01 03" tests/run-all.sh  # subset
+#   IAC_T6=1 tests/run-all.sh       # + the opt-in T6 emulator stage (floci)
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -287,6 +288,22 @@ for tier in ${TIERS:-01 02 03 04}; do
     engine_loop "$tier" "$prov" "$dest"
   done
 done
+
+# T6: floci emulator trio — all three clouds' state planes + a real tier-01
+# AWS apply. Opt-in (IAC_T6=1) because it needs Docker + image pulls; the
+# script itself skips loudly-with-reason when prerequisites are absent, and
+# the docker runner (no docker socket inside) auto-skips it too.
+if [ "${IAC_T6:-0}" = "1" ]; then
+  echo "=== T6: floci emulator stage ==="
+  if out="$(bash "$REPO_ROOT/tests/t6-emulators.sh" 2>&1)"; then
+    printf '%s\n' "$out"
+  else
+    printf '%s\n' "$out"
+    result FAIL "T6/emulators" "floci stage failed (details above)"
+  fi
+else
+  result SKIP "T6/emulators" "opt-in only (IAC_T6=1; needs docker + engine)"
+fi
 
 echo "=== summary: $PASS pass, $FAIL fail, $SKIP skip ==="
 [ "$FAIL" -eq 0 ]

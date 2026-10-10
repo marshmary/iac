@@ -1,10 +1,11 @@
 # Provider-free bootstrap used by playground/up.sh to create the S3 state
-# bucket INSIDE LocalStack before the first apply. Locking is S3-native
-# (use_lockfile = true in the project's backend.tf), so no DynamoDB table is
-# needed here. The real backend.tf in the project root points at the bucket
-# made here.
+# bucket INSIDE floci (the AWS emulator on localhost:4566) before the first
+# apply. Locking is S3-native in real projects (use_lockfile = true), but the
+# playground's localize.sh disables it against floci (conditional writes are
+# not documented there), so no DynamoDB table is needed here. The real
+# backend.tf in the project root points at the bucket made here.
 #
-# LocalStack emulates S3, so this runs fully offline:
+# floci emulates S3, so this runs fully offline:
 #     AWS_ENDPOINT_URL=http://localhost:4566 \
 #     AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
 #     tofu init -backend=false && tofu apply -auto-approve
@@ -23,14 +24,14 @@ terraform {
 
 provider "aws" {
   region = var.region
-  # Skip real-account discovery: LocalStack accepts any credentials.
+  # Skip real-account discovery: floci accepts any credentials.
   skip_credentials_validation = true
   skip_requesting_account_id  = true
   skip_metadata_api_check     = true
-  # LocalStack serves S3 on a single edge endpoint (localhost:4566) but the
+  # floci serves S3 on a single edge endpoint (localhost:4566) but the
   # provider otherwise resolves virtual-hosted bucket URLs
   # (bucket.localhost -> wrong host). Path-style puts the bucket in the URL
-  # path where LocalStack can route it. (Equivalent env: S3_FORCE_PATH_STYLE.)
+  # path where floci can route it. (Equivalent env: S3_FORCE_PATH_STYLE.)
   s3_use_path_style = true
 }
 

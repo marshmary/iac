@@ -90,7 +90,7 @@ dir and runs a dependency-graded pyramid:
 | T3 | offline `plan -refresh=false` with fake creds | CLIs, no cloud |
 | T4 | OpenTofu native tests (`mock_providers`) | `tofu` |
 | T5 | `conftest` policy assertions on plan JSON | `conftest` |
-| T6 | LocalStack / Azurite full apply (opt-in) | Docker |
+| T6 | floci emulator trio — all 3 clouds, full apply (AWS) + state roundtrips (opt-in) | Docker |
 
 Details: `docs/testing.md`. The generated project itself carries the same
 checks as `task check` (fully offline) so correctness is re-verifiable

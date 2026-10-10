@@ -1,44 +1,50 @@
 # Single compose file powering the disposable playground (playground/README.md).
-# One `docker compose up -d` brings up every local emulator needed to run real
-# init/plan/apply/destroy cycles against all four tiers WITHOUT a cloud account.
+# One `docker compose up -d` brings up the floci emulator trio — all three
+# clouds' APIs locally, no cloud account, no auth tokens (floci is MIT-licensed;
+# https://floci.io). localize.sh wires the generated projects to these ports.
 #
-# Coverage notes (mirror docs/testing.md):
-#   - localstack  -> AWS: S3 (the s3 backend with native locking) and the
-#                    aws_s3_bucket starter in tiers 01/02. Point AWS_ENDPOINT_URL
-#                    at localhost:4566. localize.sh wires the projects to it.
-#   - azurite     -> FUTURE WORK: booted but not wired yet - nothing points
-#                    Azure projects at it (localize.sh is AWS-only). Azure
-#                    tiers run offline plan/validate in the playground today.
-#   - gcp         -> no free emulator; offline plan/validate only.
+# Coverage notes (mirror playground/README.md + docs/testing.md):
+#   - floci      -> AWS on :4566 (LocalStack drop-in): S3 state backend + the
+#                   aws_s3_bucket starter in tiers 01/02. Point AWS_ENDPOINT_URL
+#                   at localhost:4566.
+#   - floci-az   -> Azure on :4577, Azurite wire-compatible (same well-known
+#                   devstoreaccount1 account/key): azurerm state backend via
+#                   blob. The ARM resource plane is NOT emulated, so azure
+#                   starters stay offline-validate.
+#   - floci-gcp  -> GCP on :4588 (GCS REST JSON/XML + gRPC): gcs state backend
+#                   via STORAGE_EMULATOR_HOST. The google resource plane is NOT
+#                   emulated, so gcp starters stay offline-validate.
 services:
-  localstack:
-    # Pin the community/OSS image: the plain `latest` tag now pulls the Pro
-    # edition, which exits with "License activation failed" unless a
-    # LOCALSTACK_AUTH_TOKEN is set. `:4` is the OSS release line and needs none.
-    image: localstack/localstack:4
-    container_name: iac-playground-localstack
-    environment:
-      - SERVICES=s3,sts,iam
-      - DEBUG=0
+  floci:
+    # Version-pinned release tags (no `latest` drift; `latest` == same digest
+    # today but floats). The docker.sock mount is what floci uses to run
+    # "real engine" services (Lambda/RDS/...); S3/STS/IAM work without it but
+    # the mount keeps the full service set available.
+    image: floci/floci:2.2.0
+    container_name: iac-playground-floci
     ports:
       - "4566:4566"          # single AWS edge endpoint
     volumes:
-      - localstack-data:/var/lib/localstack
+      - floci-data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
 
-  azurite:
-    # Pinned to a stable release tag (same line MCR tags as `latest`).
-    # STATUS: future work - NOTHING localizes Azure projects to this emulator
-    # yet (playground/localize.sh is AWS-only), so azurite is booted but
-    # unused today. Wiring it means patching azurerm backend + provider with
-    # the Azurite endpoints (blob 10000) plus ARM_* fake credentials; until
-    # then Azure tiers run offline plan/validate only.
-    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
-    container_name: iac-playground-azurite
+  floci-az:
+    image: floci/floci-az:0.14.0
+    container_name: iac-playground-floci-az
     ports:
-      - "10000:10000"        # blob endpoint for the azurerm backend
+      - "4577:4577"          # all REST services; blob at /devstoreaccount1
     volumes:
-      - azurite-data:/data
+      - floci-az-data:/app/data
+
+  floci-gcp:
+    image: floci/floci-gcp:0.10.0
+    container_name: iac-playground-floci-gcp
+    ports:
+      - "4588:4588"          # all REST + gRPC services
+    volumes:
+      - floci-gcp-data:/app/data
 
 volumes:
-  localstack-data:
-  azurite-data:
+  floci-data:
+  floci-az-data:
+  floci-gcp-data:

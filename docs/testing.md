@@ -14,20 +14,26 @@ Level T0 runs with nothing but a POSIX shell installed.
 | T3 | offline plan: `plan -refresh=false -var dry_run=true` with fake creds (`tests/fixtures/*.env`) | CLIs, no cloud | variables/type constraints, starter resources plan |
 | T4 | `tofu test` with native tests (mock-free where possible) | `tofu` | behavioral assertions on modules |
 | T5 | `conftest verify` policy unit tests + `tofu show -json tfplan \| conftest test -p policy/` | `conftest` | rules behave as documented; plans obey tag/naming policy |
-| T6 | LocalStack / Azurite real apply via `docker compose -f tests/docker-compose.emulators.yml` | Docker | full lifecycle, opt-in only |
+| T6 | floci emulator trio (AWS :4566 / Azure :4577 / GCP :4588) via `tests/t6-emulators.sh`: real tier-01 AWS apply + azurerm/gcs state-plane roundtrips | Docker + engine, opt-in (`IAC_T6=1 tests/run-all.sh`) | full lifecycle against local fake clouds, all three cloud APIs |
 
 Provider caveats: T3 is guaranteed on AWS for tiers 01–02 (the provider ships
 `skip_* = var.dry_run` flags); Azure/GCP providers phone home while
-configuring, so their T3 runs report SKIP-with-reason unless an emulator (T6)
-is up. Terragrunt tiers skip T3 because unit plans initialize the real state
-backend first — their offline coverage is T2 module-level validate plus the
-provider-free `baseline` module's native tests (T4).
+configuring, so their T3 runs report SKIP-with-reason. Terragrunt tiers skip
+T3 because unit plans initialize the real state backend first — their offline
+coverage is T2 module-level validate plus the provider-free `baseline`
+module's native tests (T4). T6 covers all three clouds' **state backends**
+locally (S3 on floci, Azure Blob on floci-az, GCS on floci-gcp) plus real AWS
+resource applies; the Azure ARM and Google resource planes have no free
+emulator, so azure/gcp starter resources remain offline-validate there. T6
+never runs inside the docker runner (no docker socket in the image) and
+skips with a reason unless `IAC_T6=1` is set on a host with Docker.
 
 ## Running
 
 ```sh
 tests/run-all.sh                  # full matrix, auto-detects tools
 TIERS="01 03" tests/run-all.sh    # subset
+IAC_T6=1 tests/run-all.sh         # + T6: floci emulators, all 3 clouds (needs Docker)
 tests/gen-manifests.sh            # regenerate golden trees after deliberate structure change
 ```
 
